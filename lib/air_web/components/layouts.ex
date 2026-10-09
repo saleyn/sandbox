@@ -198,7 +198,8 @@ defmodule AirWeb.Layouts do
            active; light mode is untouched and still uses bg-base-100. -->
       <div
         id="theme-toggle-menu"
-        class="hidden absolute mt-2 w-40 flex flex-col gap-0.5 p-1 rounded-lg border border-base-300 bg-base-100 dark:bg-gray-800 text-base-content shadow-lg z-50"
+        phx-hook="DropdownPositionHook"
+        class="hidden absolute right-0 mt-2 w-40 flex flex-col gap-0.5 p-1 rounded-lg border border-base-300 bg-base-100 dark:bg-gray-800 text-base-content shadow-lg z-50"
         role="menu"
       >
         <!-- w-full on every item: without it each button only sizes to

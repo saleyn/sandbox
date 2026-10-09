@@ -162,7 +162,7 @@ class GrafanaDatePicker {
           <!-- Clock icon gets its own shaded segment + right border, like
                an input-group prefix, instead of floating directly on the
                same background as the text. -->
-          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 flex-shrink-0">
+          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
             ${ICONS.clock('w-4 h-4 text-gray-500 dark:text-gray-400')}
           </span>
           <input
@@ -178,7 +178,7 @@ class GrafanaDatePicker {
                rotation lives on the INNER span, not this one — rotating a
                box that itself has a one-sided border would visually flip
                the border to the opposite edge when open. -->
-          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-l border-gray-300 dark:border-gray-600 shrink-0">
             <span class="gdp-chevron inline-flex items-center justify-center transition-transform duration-150">
               ${ICONS.chevronDown('w-4 h-4')}
             </span>
@@ -203,7 +203,7 @@ class GrafanaDatePicker {
                  own content (inputs + buttons + recently-used) is ever
                  taller than the row allows, IT scrolls internally rather
                  than pushing/overflowing past the row boundary above. -->
-            <div class="${sz.leftColWidth} flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 ${sz.leftColPad} ${sz.leftColGap} overflow-y-auto">
+            <div class="${sz.leftColWidth} shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 ${sz.leftColPad} ${sz.leftColGap} overflow-y-auto">
               <div class="relative">
                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">From</label>
                 <div class="relative">
@@ -257,14 +257,14 @@ class GrafanaDatePicker {
               <div class="flex gap-2 pt-2">
                 <button
                   type="button"
-                  class="gdp-copy flex-shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
+                  class="gdp-copy shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
                   title="Copy to clipboard"
                 >
                   ${ICONS.clipboard('w-4 h-4')}
                 </button>
                 <button
                   type="button"
-                  class="gdp-paste flex-shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
+                  class="gdp-paste shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
                   title="Paste from clipboard"
                 >
                   ${ICONS.clipboardDocument('w-4 h-4')}
@@ -286,7 +286,7 @@ class GrafanaDatePicker {
                    internally (own max-h as a soft cap), while the overall
                    column overflow-y-auto above is the hard backstop. -->
               <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex-1 min-h-0 flex flex-col">
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1 flex-shrink-0">Recently used absolute ranges</p>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1 shrink-0">Recently used absolute ranges</p>
                 <div class="gdp-recently-used space-y-2 overflow-y-auto">
                   ${this.renderRecentlyUsed()}
                 </div>
@@ -311,9 +311,9 @@ class GrafanaDatePicker {
                  the search box away with everything else, since it was
                  just another child in the same scrolling box. -->
             <div class="flex-1 min-w-0 flex flex-col">
-              <!-- flex-shrink-0: fixed header, never part of the
+              <!-- shrink-0: fixed header, never part of the
                    scrollable area below. -->
-              <div class="${sz.searchWrapPad} border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div class="${sz.searchWrapPad} border-b border-gray-200 dark:border-gray-700 shrink-0">
                 <input
                   type="text"
                   class="gdp-search-input w-full ${sz.searchInputPad} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
@@ -364,7 +364,7 @@ class GrafanaDatePicker {
                        panel. -->
                   <button
                     type="button"
-                    class="gdp-timezone-close flex-shrink-0 p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                    class="gdp-timezone-close shrink-0 p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                     title="Close"
                   >
                     ${ICONS.xMark('w-4 h-4')}
@@ -1450,7 +1450,7 @@ class GrafanaDatePicker {
           ${days}
         </div>
         <div class="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <label class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">Time</label>
+          <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Time</label>
           <input
             type="time"
             step="1"

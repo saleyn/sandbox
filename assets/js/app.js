@@ -29,11 +29,17 @@ import topbar from "../vendor/topbar"
 import "./grafana-date-picker"
 import {DatePickerHook} from "./date-picker-hook"
 
+// Import DAG visual editor hook
+import {DagEditorHook} from "./dag-editor-hook"
+import {CodeEditorHook, TaskModalTabsHook} from "./code-editor-hook"
+import {DropdownPositionHook} from "./dropdown-position-hook"
+import {ChipListHook} from "./chip-list-hook"
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, DatePickerHook},
+  hooks: {...colocatedHooks, DatePickerHook, DagEditorHook, CodeEditorHook, TaskModalTabsHook, DropdownPositionHook, ChipListHook},
 })
 
 // Show progress bar on live navigation and form submits

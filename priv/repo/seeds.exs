@@ -15,27 +15,31 @@ alias Air.DagSimulator
 alias Air.DagTask
 alias Air.TaskInstance
 
-# Helper function to determine downstream tasks for the DAG
+# Helper function to determine downstream tasks for the DAG.
+# Each entry is a map with task_id + data_size (the connection metadata).
 get_downstream_tasks = fn idx, _total ->
-  case idx do
-    0 -> ["task_1", "task_2"]
-    1 -> ["task_2"]
-    2 -> ["task_3", "task_4"]
-    3 -> ["task_5"]
-    4 -> ["task_6"]
-    5 -> ["task_7", "task_8", "task_9"]
-    8 -> ["task_10", "task_11"]
-    9 -> ["task_12"]
-    10 -> ["task_13"]
-    11 -> ["task_14"]
-    12 -> ["task_15", "task_16"]
-    15 -> ["task_17", "task_18"]
-    16 -> ["task_19"]
-    17 -> ["task_20", "task_21", "task_22"]
-    21 -> ["task_22"]
-    22 -> []
-    _ -> []
-  end
+  downstream_ids =
+    case idx do
+      0 -> ["task_1", "task_2"]
+      1 -> ["task_2"]
+      2 -> ["task_3", "task_4"]
+      3 -> ["task_5"]
+      4 -> ["task_6"]
+      5 -> ["task_7", "task_8", "task_9"]
+      8 -> ["task_10", "task_11"]
+      9 -> ["task_12"]
+      10 -> ["task_13"]
+      11 -> ["task_14"]
+      12 -> ["task_15", "task_16"]
+      15 -> ["task_17", "task_18"]
+      16 -> ["task_19"]
+      17 -> ["task_20", "task_21", "task_22"]
+      21 -> ["task_22"]
+      22 -> []
+      _ -> []
+    end
+
+  Enum.map(downstream_ids, fn tid -> %{"task_id" => tid, "data_size" => "M"} end)
 end
 
 # Clear existing data

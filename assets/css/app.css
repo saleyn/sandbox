@@ -191,3 +191,522 @@
   animation: explosion 0.5s ease-out forwards;
   pointer-events: none;
 }
+
+/* DagEditor (dag-editor/dag-editor.js) node styling — plain/flat look:
+   white rounded-rect task boxes with a thin border, and a diamond for
+   condition/branch nodes. Scoped under #dag-canvas-wrapper so it only
+   applies within the DAG editor, not globally. */
+#dag-canvas-wrapper {
+  background-color: #f9fafb;
+}
+#dag-canvas-wrapper.dag-editor-dark,
+#dag-canvas-wrapper .dag-editor-dark {
+  background-color: #111827;
+}
+/* Two independent gradient layers sharing the same background-position
+   (kept in sync with pan in _applyTransform) but different
+   background-size: the first pair draws the minor (every-cell) lines, the
+   second draws the heavier major lines every GRID_MAJOR_EVERY cells. Both
+   theme variants use BLACK lines (not white-on-dark for the dark theme) —
+   barely-there over the dark background rather than a bright wash. Minor
+   lines are a full 1px wide, not a sub-pixel 0.5px: a 0.5px gradient edge
+   lands on a fractional device pixel at most zoom levels and the browser
+   rounds/antialiases it away entirely at some scale factors, making the
+   minor grid flicker in and out as you zoom — a full 1px line always
+   rasterizes to at least one solid pixel regardless of scale. Major lines
+   stay visually heavier via higher opacity, not extra width. */
+.dag-editor-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.09) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0, 0, 0, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 1px, transparent 1px);
+  pointer-events: none;
+}
+.dag-editor-dark .dag-editor-grid {
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0, 0, 0, 0.65) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.65) 1px, transparent 1px);
+}
+.dag-editor-viewport {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+.dag-editor-zoom-readout {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.85);
+  color: #374151;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  user-select: none;
+}
+.dag-editor-zoom-readout:hover {
+  background: rgba(243, 244, 246, 0.95);
+}
+.dag-editor-dark .dag-editor-zoom-readout {
+  background: rgba(31, 41, 55, 0.85);
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+.dag-editor-dark .dag-editor-zoom-readout:hover {
+  background: rgba(55, 65, 81, 0.95);
+}
+.dag-editor-edges {
+  position: absolute;
+  overflow: visible;
+  width: 1px;
+  height: 1px;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.dag-editor-edge {
+  fill: none;
+  stroke: #64748b;
+}
+.dag-editor-dark .dag-editor-edge {
+  stroke: #94a3b8;
+}
+/* The arrowhead marker is defined once in <defs> and shared by every edge,
+   so it can't simply inherit each path's own stroke color — styled to the
+   same color edges use instead. */
+.dag-editor-arrowhead {
+  fill: #64748b;
+}
+.dag-editor-dark .dag-editor-arrowhead {
+  fill: #94a3b8;
+}
+/* The svg.dag-editor-edges layer itself is pointer-events:none (so clicks
+   pass through to nodes/empty canvas beneath), but the per-edge midpoint
+   drag handle needs to receive mousedown — re-enabled per-element.
+   Invisible at rest (opacity 0, but still hit-testable — SVG shapes keep
+   receiving pointer events at opacity:0 as long as pointer-events isn't
+   none) so it doesn't clutter the diagram; appears filled (matching the
+   line color) on hover as the affordance that it's draggable. While
+   actively being dragged (.is-dragging, toggled in JS for the duration of
+   the drag regardless of whether the cursor is still over it) it instead
+   shows a hollow center with a 2px outline, so the user keeps clear
+   feedback of exactly where the control point is even if the drag moves
+   the cursor away from it. */
+.dag-editor-edge-handle {
+  fill: #64748b;
+  stroke: transparent;
+  stroke-width: 1.5px;
+  opacity: 0;
+  /* cursor (ew-resize/ns-resize) is set inline per-handle in JS, matching
+     the actual axis a drag will move it along — see _renderEdgeHandle. */
+  pointer-events: all;
+}
+.dag-editor-dark .dag-editor-edge-handle {
+  fill: #94a3b8;
+}
+.dag-editor-edge-handle:hover {
+  opacity: 1;
+}
+.dag-editor-edge-handle.is-dragging {
+  opacity: 1;
+  fill: none;
+  stroke: #64748b;
+  stroke-width: 2px;
+}
+.dag-editor-dark .dag-editor-edge-handle.is-dragging {
+  stroke: #94a3b8;
+}
+.dag-editor-drag-preview {
+  position: absolute;
+  overflow: visible;
+  width: 1px;
+  height: 1px;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.dag-editor-drag-line {
+  stroke: #999;
+  stroke-width: 2px;
+}
+.dag-editor-marquee {
+  position: absolute;
+  border: 1px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+  z-index: 6;
+}
+.dag-editor-nodes {
+  position: absolute;
+  inset: 0;
+  /* Full-size layer, but only individual .dag-node elements (re-enabled
+     below) should capture clicks — otherwise this div's empty space
+     intercepts pointer events meant for the edges SVG beneath it (e.g. the
+     edge midpoint drag handle), even where no node is visually present. */
+  pointer-events: none;
+}
+.dag-editor-nodes .dag-node {
+  pointer-events: auto;
+}
+.dag-node {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+}
+.dag-node-task {
+  border-radius: 6px;
+  background: #ffffff;
+  /* Matches .dag-editor-edge's light-mode stroke (#64748b) — a lighter,
+     more neutral gray here read as disconnected from the arrows pointing
+     at it. */
+  border: 1px solid #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #333;
+}
+.dag-editor-dark .dag-node-task {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+.dag-node-task.is-selected {
+  border-color: #fbbf24;
+  border-width: 2px;
+}
+/* Condition nodes render as a diamond: the outer .dag-node-condition box
+   stays unrotated (so drag/hit-testing and our absolutely-positioned
+   handles/labels use plain, unrotated coordinates), and a smaller inner
+   square rotated 45° gives the actual diamond look — simpler and more
+   reliable across browsers than clip-path + a separately clipped border
+   pseudo-element. */
+.dag-node-condition {
+  position: absolute;
+}
+.dag-node-condition .diamond-shape {
+  position: absolute;
+  inset: 9px;
+  background: #ffffff;
+  /* See .dag-node-task above — matches .dag-editor-edge's light-mode
+     stroke color. */
+  border: 1px solid #64748b;
+  transform: rotate(45deg);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.dag-editor-dark .dag-node-condition .diamond-shape {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+.dag-node-condition.is-selected .diamond-shape {
+  border-color: #fbbf24;
+  border-width: 2px;
+}
+/* The name is drawn inside the diamond when it fits (centered, see
+   _placeConditionLabel), and pushed out to a free corner — one with no
+   handle on it — only when the text is too wide. Horizontal orientation
+   (handles on W/E) leaves the top-left corner clear; vertical orientation
+   (handles on N/S) leaves the top-right corner clear. */
+.dag-node-condition .label {
+  position: absolute;
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dag-editor-dark .dag-node-condition .label {
+  color: #e5e7eb;
+}
+.dag-node-condition .label.label-inside {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dag-node-condition.orientation-horizontal .label.label-outside {
+  left: 0;
+  bottom: 100%;
+  transform: translate(0, -6px);
+}
+.dag-node-condition.orientation-vertical .label.label-outside {
+  right: 0;
+  top: 0;
+  transform: translate(calc(100% + 6px), 0);
+}
+.dag-node-task .label {
+  pointer-events: none;
+}
+.connector-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border: 1px solid #999;
+  border-radius: 50%;
+  cursor: crosshair;
+}
+.dag-editor-dark .connector-handle {
+  background: #374151;
+  border-color: #6b7280;
+}
+/* A connected handle's color matches the edge/arrow color (#64748b light /
+   #94a3b8 dark — see .dag-editor-edge) rather than a separate, more
+   saturated blue — the previous blue read as too dark/heavy against the
+   light-theme canvas, and didn't visually match the line it's attached
+   to. The border is the full slate tone (darker, for definition); the
+   fill is a lighter tint of the same hue so the dot doesn't look like a
+   solid ink blot at small sizes. */
+.connector-handle.has-connection {
+  background: #cbd5e1;
+  border-color: #64748b;
+}
+.dag-editor-dark .connector-handle.has-connection {
+  background: #475569;
+  border-color: #94a3b8;
+}
+/* The ingress (input) handle is only ever a drop target, never something
+   the user drags from — once connected it's just visual noise sitting on
+   top of the incoming line's arrowhead, so hide it. A condition's
+   true/false output handles allow exactly one connection each (see
+   connect()'s "only one connection per true/false slot" rule), so once
+   either is used there's nothing left to drag from it — hide it too. A
+   task's plain output handle is the one exception: it allows unlimited
+   outgoing connections (N×N), so it stays visible (highlighted via
+   has-connection above) to keep inviting further drags. */
+.connector-handle.input-handle.has-connection,
+.connector-handle.true-handle.has-connection,
+.connector-handle.false-handle.has-connection {
+  display: none;
+}
+.dag-node-task .input-handle {
+  left: -6px;
+  top: 50%;
+  margin-top: -6px;
+}
+.dag-node-task .output-handle {
+  right: -6px;
+  top: 50%;
+  margin-top: -6px;
+}
+.dag-node-condition .input-handle {
+  left: -6px;
+  top: 50%;
+  margin-top: -6px;
+}
+/* Diamond vertices: orientation is picked at runtime (see
+   _conditionOrientation() in dag-editor.js) based on where the node's
+   connected peers actually sit. The diamond only has 4 vertices (N/S/E/W)
+   but needs 3 distinct, non-overlapping connection points, so input and
+   false must never share a vertex (they did previously — input=W and
+   false=W in horizontal mode — which made incoming lines visually land on
+   the "false" handle). Vertical places input on top (N), true at the
+   bottom (S), false at the right (E); horizontal places input on the left
+   (W), true at the right (E), false at the bottom (S). */
+.dag-node-condition.orientation-vertical .input-handle {
+  left: 50%;
+  top: -6px;
+  margin-left: -6px;
+  margin-top: 0;
+}
+.dag-node-condition.orientation-vertical .true-handle {
+  left: 50%;
+  top: 100%;
+  margin-left: -6px;
+  margin-top: -6px;
+}
+.dag-node-condition.orientation-vertical .false-handle {
+  right: -6px;
+  left: auto;
+  top: 50%;
+  margin-top: -6px;
+}
+.dag-node-condition.orientation-horizontal .input-handle {
+  left: -6px;
+  top: 50%;
+  margin-top: -6px;
+}
+.dag-node-condition.orientation-horizontal .true-handle {
+  right: -6px;
+  left: auto;
+  top: 50%;
+  margin-top: -6px;
+}
+.dag-node-condition.orientation-horizontal .false-handle {
+  left: 50%;
+  top: 100%;
+  margin-left: -6px;
+  margin-top: -6px;
+}
+.dag-node-condition .slot-label {
+  position: absolute;
+  font-size: 10px;
+  color: #666;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dag-editor-dark .dag-node-condition .slot-label {
+  color: #9ca3af;
+}
+/* Labels are offset away from the connection point itself (slightly right,
+   for N/S handles; slightly below, for W/E handles) so the line leaving the
+   handle doesn't run directly under the label text. */
+.dag-node-condition.orientation-vertical .true-label {
+  left: 50%;
+  top: 100%;
+  transform: translate(2px, 6px);
+}
+.dag-node-condition.orientation-vertical .false-label {
+  right: -34px;
+  top: 50%;
+  transform: translateY(2px);
+}
+/* Half the normal label-to-shape gap (-17px rather than -34px, matching
+   false-label's own offset) — pulls "true" in closer to the diamond. */
+.dag-node-condition.orientation-horizontal .true-label {
+  right: -17px;
+  top: 50%;
+  transform: translateY(2px);
+}
+.dag-node-condition.orientation-horizontal .false-label {
+  left: 50%;
+  top: 100%;
+  transform: translate(2px, 6px);
+}
+/* The context menu is appended to document.body (so it can render above
+   everything and escape the editor's own clipping/stacking context), not
+   as a descendant of #dag-editor-root — so dark mode can't be inherited
+   via an ancestor selector the way the rest of the editor's chrome does;
+   .dag-editor-dark is applied directly to the menu element itself
+   instead (see showContextMenu in dag-editor-hook.js). Submenus (nested
+   .dag-editor-context-menu elements) get the same class explicitly when
+   built, for the same reason. */
+.dag-editor-context-menu {
+  position: fixed;
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  min-width: 160px;
+  font-size: 13px;
+}
+.dag-editor-context-menu.dag-editor-dark {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+.dag-editor-context-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: #1f2937;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dag-editor-dark .dag-editor-context-menu-item {
+  color: #e5e7eb;
+}
+.dag-editor-context-menu-item:hover {
+  background: #f3f4f6;
+}
+.dag-editor-dark .dag-editor-context-menu-item:hover {
+  background: #374151;
+}
+.dag-editor-context-menu-item.is-disabled {
+  color: #9ca3af;
+  cursor: default;
+}
+.dag-editor-context-menu-item.is-disabled:hover {
+  background: none;
+}
+.dag-editor-context-menu-item.has-submenu.is-disabled:hover .dag-editor-context-menu {
+  display: none;
+}
+.dag-editor-context-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: #e5e7eb;
+}
+.dag-editor-dark .dag-editor-context-menu-separator {
+  background: #4b5563;
+}
+/* Label is the only flexible child, so a fixed-width icon gutter stays put
+   on the left and the submenu caret (when present) is pushed flush right —
+   matches the space-between layout the item used before icons existed,
+   without needing justify-content now that there are 2-3 children instead
+   of always exactly 2. */
+.dag-editor-context-menu-label {
+  flex: 1;
+}
+.dag-editor-context-menu-caret {
+  font-size: 10px;
+  opacity: 0.6;
+  flex: none;
+}
+/* Fixed-width gutter every item reserves for its leading heroicon, whether
+   or not it actually has one, so every item's label lines up on the same
+   column. Uses the hero-* mask-image classes (see assets/vendor/heroicons.js)
+   rather than inline SVG, consistent with how icons are used elsewhere via
+   core_components.ex's <.icon>. */
+.dag-editor-context-menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+/* The tint color only applies when a hero-* mask-image class is actually
+   present — without one (a plain unchecked checkbox/radio option, or a
+   submenu item with no icon at all) the slot must stay empty space, not a
+   solid colored square, since background-color alone (with no mask) paints
+   the whole box. */
+.dag-editor-context-menu-icon[class*="hero-"] {
+  background-color: #4b5563;
+}
+.dag-editor-dark .dag-editor-context-menu-icon[class*="hero-"] {
+  background-color: #9ca3af;
+}
+.dag-editor-context-menu-item.is-disabled .dag-editor-context-menu-icon[class*="hero-"] {
+  background-color: #9ca3af;
+}
+.dag-editor-dark .dag-editor-context-menu-item.is-disabled .dag-editor-context-menu-icon[class*="hero-"] {
+  background-color: #6b7280;
+}
+.dag-editor-context-menu-item.has-submenu > .dag-editor-context-menu {
+  position: absolute;
+  margin-top: -5px;
+}
+/* Radio-style selection dot (Line style / Line width submenus) — a plain
+   CSS circle, not a hero-* mask-image icon, since it needs to sit centered
+   and shrunk within the same icon gutter rather than filling it. */
+.dag-editor-context-menu-radio-dot {
+  position: relative;
+}
+.dag-editor-context-menu-radio-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4b5563;
+  transform: translate(-50%, -50%);
+}
+.dag-editor-dark .dag-editor-context-menu-radio-dot::before {
+  background: #9ca3af;
+}
