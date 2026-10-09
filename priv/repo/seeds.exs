@@ -4,7 +4,8 @@
 #     mix run priv/repo/seeds.exs
 #
 # This creates:
-#   - 1 example DAG with 23 tasks
+#   - 1 example DAG with 12 tasks (the editor/demo UI is easier to read with
+#     a small graph; 12 is the cap for any seeded DAG)
 #   - 5 DAG runs (executions) over the past 5 days
 #   - Task instances for each task in each run with realistic statuses
 
@@ -15,31 +16,48 @@ alias Air.DagSimulator
 alias Air.DagTask
 alias Air.TaskInstance
 
-# Helper function to determine downstream tasks for the DAG.
-# Each entry is a map with task_id + data_size (the connection metadata).
-get_downstream_tasks = fn idx, _total ->
-  downstream_ids =
+# Define task names (12 max per seeded DAG — keeps the editor/demo UI
+# readable without scrolling/zooming out).
+task_names = [
+  "push_config_params",
+  "start_data_pipeline",
+  "start_branch_normal",
+  "start_branch_cdc",
+  "create_emr_cluster_normal",
+  "create_emr_cluster_cdc",
+  "add_step_to_write_data_to_s3_normal",
+  "add_step_to_write_data_to_s3_cdc",
+  "paths_merge",
+  "terminate_cluster",
+  "count_records",
+  "end_data_pipeline"
+]
+
+# Helper function to determine downstream tasks for the DAG, by index into
+# task_names above — condensed normal/CDC branch-and-merge shape. Returns
+# real task_ids (task_names entries), not placeholder "task_N" strings, so
+# downstream_list actually references tasks that exist (a prior version of
+# this seed used "task_1"/"task_2"/etc. placeholders that matched nothing,
+# silently producing a DAG with zero edges).
+get_downstream_tasks = fn idx, names ->
+  downstream_indices =
     case idx do
-      0 -> ["task_1", "task_2"]
-      1 -> ["task_2"]
-      2 -> ["task_3", "task_4"]
-      3 -> ["task_5"]
-      4 -> ["task_6"]
-      5 -> ["task_7", "task_8", "task_9"]
-      8 -> ["task_10", "task_11"]
-      9 -> ["task_12"]
-      10 -> ["task_13"]
-      11 -> ["task_14"]
-      12 -> ["task_15", "task_16"]
-      15 -> ["task_17", "task_18"]
-      16 -> ["task_19"]
-      17 -> ["task_20", "task_21", "task_22"]
-      21 -> ["task_22"]
-      22 -> []
+      0 -> [1]
+      1 -> [2, 3]
+      2 -> [4]
+      3 -> [5]
+      4 -> [6]
+      5 -> [7]
+      6 -> [8]
+      7 -> [8]
+      8 -> [9]
+      9 -> [10]
+      10 -> [11]
+      11 -> []
       _ -> []
     end
 
-  Enum.map(downstream_ids, fn tid -> %{"task_id" => tid, "data_size" => "M"} end)
+  Enum.map(downstream_indices, fn i -> %{"task_id" => Enum.at(names, i), "data_size" => "M"} end)
 end
 
 # Clear existing data
@@ -49,41 +67,24 @@ Repo.delete_all(DagRun)
 Repo.delete_all(DagTask)
 Repo.delete_all(DAG)
 
-# Define task names
-task_names = [
-  "push_config_params",
-  "start_data_pipeline",
-  "choose_normal_or_cdc",
-  "start_branch_normal",
-  "create_emr_cluster_normal",
-  "add_step_to_write_data_to_s3_normal",
-  "monitor_AU_IN_normal_job",
-  "monitor_EU_IN_normal_job",
-  "monitor_US_CA_normal_job",
-  "start_branch_cdc",
-  "create_emr_cluster_cdc",
-  "add_step_to_write_data_to_s3_cdc",
-  "monitor_AU_IN_cdc_job",
-  "monitor_EU_IN_cdc_job",
-  "monitor_US_CA_cdc_job",
-  "paths_merge",
-  "terminate_cluster",
-  "update_latest_denormalized_date_file_txt",
-  "count_records_1",
-  "count_records_2",
-  "count_records_3",
-  "end_data_pipeline",
-  "trigger_ups_device_graph_etl_write_to_aerospike_dag"
-]
-
 # Create DAG
 IO.puts("📊 Creating DAG...")
 
 dag_attrs = %{
   dag_id: "example_data_pipeline",
+  title: "Example Data Pipeline",
   description: "Example DAG showing data processing pipeline with normal and CDC branches",
   owner: "data_team",
-  is_paused: false
+  maintainers: ["alice@example.com", "bob@example.com"],
+  supporters: ["carol@example.com"],
+  labels: ["data-pipeline", "nightly"],
+  is_paused: false,
+  source_language: "python",
+  source_code: """
+  # Entry point invoked by the scheduler before building the task graph.
+  def configure(context):
+      context.set_param("environment", "production")
+  """
 }
 
 {:ok, dag} = Repo.insert(DAG.changeset(%DAG{}, dag_attrs))
@@ -101,7 +102,7 @@ dag_tasks =
           task_id: task_name,
           dag_id: dag.dag_id,
           task_type: "PythonOperator",
-          downstream_list: get_downstream_tasks.(idx, length(task_names))
+          downstream_list: get_downstream_tasks.(idx, task_names)
         })
       )
 
