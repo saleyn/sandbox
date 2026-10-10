@@ -274,13 +274,13 @@ defmodule AirWeb.Pages.DagList do
         <!-- DAG table -->
         <div class="bg-base-100 border border-base-300 rounded-lg overflow-hidden">
           <table class="w-full text-sm">
-            <thead class="bg-base-200 border-b border-base-300 text-left">
+            <thead class="bg-panel-title border-b border-base-300 text-left">
               <tr>
-                <th class="px-4 py-2 font-semibold text-base-content/70">ID</th>
-                <th class="px-4 py-2 font-semibold text-base-content/70">Title</th>
-                <th class="px-4 py-2 font-semibold text-base-content/70">Owner</th>
-                <th class="px-4 py-2 font-semibold text-base-content/70">Labels</th>
-                <th class="px-4 py-2 font-semibold text-base-content/70">Updated</th>
+                <th class="px-4 py-2 font-semibold text-panel-title-content/70">ID</th>
+                <th class="px-4 py-2 font-semibold text-panel-title-content/70">Title</th>
+                <th class="px-4 py-2 font-semibold text-panel-title-content/70">Owner</th>
+                <th class="px-4 py-2 font-semibold text-panel-title-content/70">Labels</th>
+                <th class="px-4 py-2 font-semibold text-panel-title-content/70">Updated</th>
                 <th class="px-4 py-2"></th>
               </tr>
             </thead>

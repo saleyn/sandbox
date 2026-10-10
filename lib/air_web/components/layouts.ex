@@ -289,7 +289,7 @@ defmodule AirWeb.Layouts do
       class={
         [
           "app-sidebar-nav-link w-full flex items-center justify-start gap-3 px-2.5 py-2 rounded text-sm font-medium transition-colors app-sidebar-collapsed-tooltip",
-          @active && "bg-primary/10 text-primary",
+          @active && "bg-ghost/10 text-ghost",
           !@active &&
             "text-base-content/70 hover:bg-base-200"
         ] ++ tooltip_class(:right)
@@ -360,10 +360,20 @@ defmodule AirWeb.Layouts do
   single icon.
 
   See <head> in root.html.heex which applies the theme before page load.
+
+  `id` defaults to "theme-toggle" (the sidebar footer's own instance, the
+  original/only call site for a long time) but MUST be overridden with a
+  unique value for any additional instance on the same page (e.g. the
+  Theme Editor's copy, reachable without expanding the sidebar first) —
+  the trigger/menu/backdrop's open-close wiring is all
+  `JS.toggle/hide(to: "#\{id}-...")`, so two instances sharing the default
+  id would open/close each other's menus instead of their own.
   """
+  attr :id, :string, default: "theme-toggle"
+
   def theme_toggle(assigns) do
     ~H"""
-    <div class="relative" id="theme-toggle">
+    <div class="relative" id={@id}>
       <!-- Trigger: shows exactly one icon, selected via CSS by matching
            <html>'s data-theme/data-theme-source attributes (same
            ancestor-attribute selector trick the old slider used for its
@@ -386,7 +396,7 @@ defmodule AirWeb.Layouts do
         type="button"
         class="btn btn-ghost btn-circle btn-sm relative z-50"
         style="color: var(--color-base-content)"
-        phx-click={JS.toggle(to: "#theme-toggle-menu") |> JS.toggle(to: "#theme-toggle-backdrop")}
+        phx-click={JS.toggle(to: "##{@id}-menu") |> JS.toggle(to: "##{@id}-backdrop")}
         aria-label="Change color theme"
         aria-haspopup="true"
       >
@@ -411,13 +421,13 @@ defmodule AirWeb.Layouts do
            state. z-40 sits below the menu/trigger (z-50) but above
            normal page content. -->
       <div
-        id="theme-toggle-backdrop"
+        id={"#{@id}-backdrop"}
         class="hidden fixed inset-0 z-40"
-        phx-click={JS.hide(to: "#theme-toggle-menu") |> JS.hide(to: "#theme-toggle-backdrop")}
+        phx-click={JS.hide(to: "##{@id}-menu") |> JS.hide(to: "##{@id}-backdrop")}
       />
 
       <div
-        id="theme-toggle-menu"
+        id={"#{@id}-menu"}
         phx-hook="DropdownPositionHook"
         class="hidden absolute right-0 mt-2 w-40 flex flex-col gap-0.5 p-1 rounded-lg border border-base-300 bg-base-100 text-base-content shadow-lg z-50"
         role="menu"
@@ -436,8 +446,8 @@ defmodule AirWeb.Layouts do
           class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-base-200 text-sm text-left"
           phx-click={
             JS.dispatch("phx:set-theme")
-            |> JS.hide(to: "#theme-toggle-menu")
-            |> JS.hide(to: "#theme-toggle-backdrop")
+            |> JS.hide(to: "##{@id}-menu")
+            |> JS.hide(to: "##{@id}-backdrop")
           }
           data-phx-theme="system"
         >
@@ -450,8 +460,8 @@ defmodule AirWeb.Layouts do
           class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-base-200 text-sm text-left"
           phx-click={
             JS.dispatch("phx:set-theme")
-            |> JS.hide(to: "#theme-toggle-menu")
-            |> JS.hide(to: "#theme-toggle-backdrop")
+            |> JS.hide(to: "##{@id}-menu")
+            |> JS.hide(to: "##{@id}-backdrop")
           }
           data-phx-theme="light"
         >
@@ -464,8 +474,8 @@ defmodule AirWeb.Layouts do
           class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-base-200 text-sm text-left"
           phx-click={
             JS.dispatch("phx:set-theme")
-            |> JS.hide(to: "#theme-toggle-menu")
-            |> JS.hide(to: "#theme-toggle-backdrop")
+            |> JS.hide(to: "##{@id}-menu")
+            |> JS.hide(to: "##{@id}-backdrop")
           }
           data-phx-theme="dark"
         >

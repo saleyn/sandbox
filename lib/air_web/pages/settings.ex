@@ -233,7 +233,7 @@ defmodule AirWeb.Pages.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.sidebar_shell flash={@flash} current_path="/settings">
-      <div class={["p-3 sm:p-8", if(@tab == "theme", do: "max-w-6xl", else: "max-w-3xl")]}>
+      <div class={["p-3 sm:p-8", if(@tab == "theme", do: "max-w-[59rem]", else: "max-w-3xl")]}>
         <h1 class="text-3xl font-bold text-base-content mb-1">Settings</h1>
         <p class="text-base-content/50 mb-6">App-wide preferences.</p>
 
@@ -242,15 +242,28 @@ defmodule AirWeb.Pages.Settings do
             <.tab_link label="Editor" tab="editor" current={@tab} />
             <.tab_link label="Theme Editor" tab="theme" current={@tab} />
           </nav>
-          <button
-            :if={@tab == "theme"}
-            type="button"
-            phx-click={open_color_guide()}
-            aria-label="What is each color used for?"
-            class={["mb-2 size-5 shrink-0 flex items-center justify-center rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/50 text-xs font-semibold" | tooltip_class(:bottom_right)]}
-          >
-            ?
-          </button>
+          <!--
+            Page-level controls for the Theme Editor tab, grouped here next
+            to the tab bar rather than inside the preset-editing form below
+            — both act on something OTHER than the preset being edited
+            (the app's live theme; an explanation of the color system
+            itself), so neither belongs mixed in with the per-preset
+            Import/Copy/Paste/Delete/Apply/Save actions in the form's own
+            button row. theme_toggle needs its own id (see
+            Layouts.theme_toggle/1's moduledoc) since the sidebar footer
+            already mounts one with the default id on the same page.
+          -->
+          <div :if={@tab == "theme"} class="mb-2 flex items-center gap-2">
+            <Layouts.theme_toggle id="theme-editor-theme-toggle" />
+            <button
+              type="button"
+              phx-click={open_color_guide()}
+              aria-label="What is each color used for?"
+              class={["size-5 shrink-0 flex items-center justify-center rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/50 text-xs font-semibold" | tooltip_class(:bottom_right)]}
+            >
+              ?
+            </button>
+          </div>
         </div>
 
         <.editor_tab :if={@tab == "editor"} form={@form} />
@@ -364,7 +377,11 @@ defmodule AirWeb.Pages.Settings do
           {"focus", "The border color a text field or select switches to when focused (clicked into or tabbed to)."},
           {"field", "The background of text inputs, selects, and textareas — intentionally separate from panels so fields stand out."},
           {"field-content", "The text color typed into fields."},
-          {"primary", "The main call-to-action color — primary buttons (e.g. \"New DAG\", \"Save\"), active/selected states, links."},
+          {"panel-title", "Background of section/table headers — a form panel's own uppercase section label, a table's header row."},
+          {"panel-title-content", "Text color on top of panel-title backgrounds."},
+          {"ghost", "Background for a tinted \"selected/active, but not a solid filled button\" look — e.g. the active sidebar nav item, or \"+ New theme\" when nothing else is selected."},
+          {"ghost-content", "Text/icon color on top of ghost backgrounds — also used as the ghost element's text color when its background is fully transparent (not selected/active)."},
+          {"primary", "The main call-to-action color — primary buttons (e.g. \"New DAG\", \"Save\"), links."},
           {"primary-content", "Text/icon color on top of primary-colored buttons and badges."},
           {"secondary", "Secondary button backgrounds — less prominent actions like \"Cancel\" or \"Paste\"."},
           {"secondary-content", "Text/icon color on top of secondary-colored buttons."},
@@ -411,7 +428,7 @@ defmodule AirWeb.Pages.Settings do
     ~H"""
     <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6">
       <div class="bg-base-100 border border-base-300 rounded-lg p-6 space-y-5">
-        <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wide">
+        <h2 class="text-sm font-semibold text-panel-title-content/70 uppercase tracking-wide">
           DAG Editor Defaults
         </h2>
 
@@ -491,7 +508,7 @@ defmodule AirWeb.Pages.Settings do
           phx-value-id={preset.id}
           class={[
             "w-full text-left px-3 py-2 rounded text-sm flex items-center justify-between gap-2",
-            preset.id == @selected_preset_id && "bg-primary/10 text-primary",
+            preset.id == @selected_preset_id && "bg-ghost/10 text-ghost",
             preset.id != @selected_preset_id &&
               "text-base-content/70 hover:bg-base-200"
           ]}
@@ -516,8 +533,8 @@ defmodule AirWeb.Pages.Settings do
             # preset row, whenever nothing else is selected, makes "you're
             # now creating a new theme" an actual visual state instead of
             # an absence of one.
-            is_nil(@selected_preset_id) && "bg-primary/10 text-primary",
-            !is_nil(@selected_preset_id) && "text-primary hover:bg-base-200"
+            is_nil(@selected_preset_id) && "bg-ghost/10 text-ghost",
+            !is_nil(@selected_preset_id) && "text-ghost hover:bg-base-200"
           ]}
         >
           <.icon name="hero-plus" class="size-4" /> New theme
@@ -528,7 +545,7 @@ defmodule AirWeb.Pages.Settings do
         for={@preset_form}
         phx-change="validate_preset"
         phx-submit="save_preset"
-        class="bg-base-100 border border-base-300 rounded-lg p-3 sm:p-6 space-y-3"
+        class="bg-base-100 border border-base-300 rounded-lg p-2 sm:p-6 space-y-3"
       >
         <!--
           Name field + every button on this row are each wrapped in the
@@ -538,10 +555,7 @@ defmodule AirWeb.Pages.Settings do
           (not just visually approximating its height) is what keeps every
           control's TOP edge aligned with the real label's text baseline,
           regardless of how each control's own intrinsic height compares
-          to the text input's. space-y-3 (was space-y-6) on the form
-          tightens the gap between this row and the accordion/preview grid
-          below — the two don't need a full 1.5rem of breathing room
-          between them.
+          to the text input's.
 
           flex-wrap + the name field forced to w-full below sm: the name
           field alone is already tight against 4 buttons' worth of
@@ -551,50 +565,102 @@ defmodule AirWeb.Pages.Settings do
           competing for space on one row and overflowing/squeezing the
           input down to near-nothing.
         -->
-        <div class="flex flex-wrap items-start gap-2">
-          <div class="fieldset mb-2 w-full sm:w-auto sm:flex-1">
+        <!--
+          Below sm, this whole area is 3 stacked rows instead of one
+          flex-wrapped line: name field, then Import/Copy/Paste/Delete
+          centered together, then Apply+Save spanning the full width as a
+          2-column grid — a flex-wrap of fixed-size buttons at mobile width
+          left Apply/Save either overflowing or orphaned on their own
+          mostly-empty line, and every button's invisible label-height
+          spacer (needed at sm+ to align tops with the name field's real
+          label) was adding a visible gap ABOVE every wrapped row once
+          stacked, since each row no longer shares a baseline with
+          anything. gap-2 on the outer column (both below and at sm+)
+          compensates for losing each row's own mb-2 (hidden below sm) so
+          rows still have SOME breathing room, just not doubled up with the
+          spacer.
+        -->
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
+          <!--
+            lg:w-[calc(100%-21.5rem)]: matches the accordion/swatch grid's
+            own 1fr column width below (grid-cols-[1fr_20rem] gap-6 — the
+            20rem fixed column plus its 1.5rem gap subtracted from this
+            row's full width leaves exactly the same width the 1fr column
+            resolves to). This field lives in a full-width row above that
+            grid, not inside it, so there's no fixed number the grid itself
+            exposes to inherit from directly — calc() is the only way to
+            track it without duplicating the name field into the grid's own
+            column (which read as visually awkward on its own, disconnected
+            from the rest of this row's buttons). Only applied at lg+,
+            matching the breakpoint where the grid itself actually becomes
+            two columns (grid-cols-1 below that) — sm:w-auto still governs
+            the range between "wrap to full width" and "match the grid".
+            When Delete is also visible (a non-system preset selected), the
+            button row can run just past this width and wrap Apply+Save
+            onto their own line — accepted tradeoff, since widening the
+            reserved space to avoid that wrap made the name/accordion width
+            match visibly imprecise instead.
+          -->
+          <div class="fieldset mb-0 sm:mb-2 w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-[calc(100%-21.5rem)]">
             <.input field={@preset_form[:name]} label="Theme name" placeholder="My custom theme" />
           </div>
-          <div class="fieldset mb-2">
-            <span class="label mb-1 invisible" aria-hidden="true">spacer</span>
-            <.daisyui_paste_box />
+
+          <!-- Import/Copy/Paste/Delete: centered as a group below sm,
+               left-aligned in normal flow at sm+. -->
+          <div class="flex items-center justify-center gap-2 sm:contents">
+            <div class="fieldset mb-0 sm:mb-2">
+              <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
+              <.daisyui_paste_box />
+            </div>
+            <div class="fieldset mb-0 sm:mb-2">
+              <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
+              <.clipboard_copy_paste_buttons />
+            </div>
+            <div :if={@preset_form[:id].value && !@preset_form.source.data.is_system} class="fieldset mb-0 sm:mb-2">
+              <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
+              <button
+                type="button"
+                phx-click="delete_preset"
+                data-confirm="Delete this theme?"
+                aria-label="Delete theme"
+                class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-error/30 text-error hover:bg-error/10" | tooltip_class(:bottom_right)]}
+              >
+                <.icon name="hero-trash" class="size-4" />
+              </button>
+            </div>
           </div>
-          <div class="fieldset mb-2">
-            <span class="label mb-1 invisible" aria-hidden="true">spacer</span>
-            <.clipboard_copy_paste_buttons />
-          </div>
-          <div :if={@preset_form[:id].value && !@preset_form.source.data.is_system} class="fieldset mb-2">
-            <span class="label mb-1 invisible" aria-hidden="true">spacer</span>
-            <button
-              type="button"
-              phx-click="delete_preset"
-              data-confirm="Delete this theme?"
-              aria-label="Delete theme"
-              class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-error/30 text-error hover:bg-error/10" | tooltip_class(:bottom_right)]}
-            >
-              <.icon name="hero-trash" class="size-4" />
-            </button>
-          </div>
-          <div class="fieldset mb-2">
-            <span class="label mb-1 invisible" aria-hidden="true">spacer</span>
-            <button
-              type="button"
-              phx-click="apply_preset"
-              aria-label="Apply current theme"
-              class={["h-8.75 px-3 inline-flex items-center gap-1.5 text-sm font-semibold rounded border border-base-300 text-base-content hover:bg-base-200 whitespace-nowrap" | tooltip_class(:bottom_right)]}
-            >
-              <.icon name="hero-eye" class="size-4" /> Apply
-            </button>
-          </div>
-          <div class="fieldset mb-2">
-            <span class="label mb-1 invisible" aria-hidden="true">spacer</span>
-            <button
-              type="submit"
-              disabled={@preset_form.source.changes == %{}}
-              class="h-8.75 px-3 inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 disabled:bg-base-300 disabled:cursor-not-allowed text-primary-content text-sm font-semibold rounded transition-colors whitespace-nowrap"
-            >
-              <.icon name="hero-check" class="size-4" /> Save Theme
-            </button>
+
+          <!--
+            Apply+Save: a full-width 2-column grid below sm (each button
+            exactly half the panel's width, together spanning edge to
+            edge), reverting to a normal inline flex group pushed to the
+            row's right edge (ml-auto) at sm+ — see the comment above this
+            whole section for why flex-wrap alone didn't work well here at
+            mobile width.
+          -->
+          <div class="flex gap-2 sm:flex sm:ml-auto">
+            <div class="fieldset mb-0 sm:mb-2">
+              <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
+              <button
+                type="button"
+                phx-click="apply_preset"
+                aria-label="Apply current theme"
+                class={["w-full sm:w-auto h-8.75 px-2 inline-flex items-center justify-center gap-1.5 text-sm font-semibold rounded border border-base-300 text-base-content hover:bg-base-200 whitespace-nowrap" | tooltip_class(:bottom_right)]}
+              >
+                <.icon name="hero-eye" class="size-4" /> Apply
+              </button>
+            </div>
+            <div class="fieldset mb-0 sm:mb-2">
+              <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
+              <button
+                type="submit"
+                aria-label="Save current theme"
+                disabled={@preset_form.source.changes == %{}}
+                class={["w-full sm:w-auto h-8.75 px-3 inline-flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 disabled:bg-base-300 disabled:cursor-not-allowed text-primary-content text-sm font-semibold rounded transition-colors whitespace-nowrap" | tooltip_class(:bottom_right)]}
+              >
+                <.icon name="hero-check" class="size-4" /> Save
+              </button>
+            </div>
           </div>
         </div>
 
@@ -704,7 +770,7 @@ defmodule AirWeb.Pages.Settings do
         flash, nothing added to the preset list) since the whole scheme
         was simply absent from params, not just sent with stale values.
       -->
-      <div class={["p-4 bg-base-100", @open && "flex-1", !@open && "hidden"]}>
+      <div class={["bg-base-100", @open && "flex-1", !@open && "hidden"]}>
         <.color_swatches field_prefix={@field_prefix} form={@form} />
       </div>
     </div>
@@ -1114,135 +1180,274 @@ defmodule AirWeb.Pages.Settings do
     assigns = assign(assigns, :colors, colors) |> assign(:rows, ThemePreset.swatch_rows())
 
     ~H"""
-    <div>
-      <div class="space-y-3">
-        <div :for={row <- @rows} class="relative grid grid-cols-4 gap-x-1 gap-y-1">
-          <!--
-            The divider between the two paired groups (columns 2 and 3) is
-            drawn as its own absolutely-positioned element straddling the
-            column gap, rather than a border+padding on column 3's own
-            cell — padding-left on that cell would shift ITS swatch
-            further right than column 3's swatch on the "base" row (which
-            has no such padding, since base's 4 columns are one group with
-            no divider), breaking vertical alignment between the two rows'
-            3rd columns. A standalone divider leaves every cell's own
-            centering untouched.
-          -->
-          <div :if={length(row) == 2} class="absolute inset-y-0 left-1/2 w-px bg-base-300" />
-          <div
-            :for={{_group_label, shade_keys, content_key} <- row}
-            class="contents"
-          >
-            <!--
-              Every swatch gets its own short purpose label underneath it
-              (e.g. "primary" / "on primary" / "hover" / "focus ring") via
-              Air.ThemePreset.shade_caption/1, instead of the group name
-              appearing once under the first swatch and every other swatch
-              in the group relying on position alone to be understood.
-              Click the (?) next to the tab bar for the longer explanation
-              of where each one is actually used in the app.
-            -->
-            <div
-              :for={swatch_key <- Enum.reject(shade_keys ++ [content_key], &is_nil/1)}
-              class="flex flex-col items-center gap-0.5"
-            >
-              <.color_swatch
-                field_prefix={@field_prefix}
-                color_key={swatch_key}
-                value={Map.get(@colors, swatch_key, "#ffffff")}
-                sample={if swatch_key == content_key, do: "A", else: nil}
-              />
-              <span class="text-[9px] text-base-content/50 text-center leading-tight max-w-10">
-                {ThemePreset.shade_caption(swatch_key)}
-              </span>
-            </div>
-          </div>
+    <!--
+      flex-col h-full + justify-between: this div is the accordion's
+      :if={@open} content (flex-1 there — see scheme_accordion_section/1),
+      so stretching to h-full and spreading its rows with justify-between
+      (equal gaps, including above/below the first/last row via the
+      padding below) is what makes the OPEN accordion's total height match
+      the right column's (preview + scratch pad) exactly, with the swatch
+      rows evenly filling whatever that height turns out to be rather than
+      clumping at the top with dead space below.
+    -->
+    <div class="h-full flex flex-col justify-between py-5 px-10">
+      <!--
+        grid-cols-4 with each cell's content centered (not a flex row): every
+        row has exactly 4 swatches (see Air.ThemePreset.swatch_rows/0 — the
+        12 non-status colors are grouped 4-per-row to match the 4-wide
+        status-color row below them), so fixing 4 equal-width columns
+        spaces them out evenly across the column's actual width AND keeps
+        every row's swatches vertically aligned with the row above/below —
+        a flex row with a fixed gap left extra width as dead space on one
+        side instead of distributing it, and didn't align column-to-column
+        between rows whose captions happen to differ in width.
+
+        :for index drives the ONE visual divider in this grid: a
+        horizontal rule between the last "plain" theme row (base-200/focus/
+        accent/neutral) and the status-color row (info/success/warning/
+        error) — those four read as a distinct group (feedback colors, not
+        UI chrome), worth visually separating from everything above. No
+        divider between any other rows, and no vertical divider within a
+        row. pt-5 on that row only (matching the panel's own p-5) keeps the
+        rule visually balanced from the row above, same gap as everywhere
+        else — every row otherwise gets identical spacing purely from the
+        parent's justify-between, no per-row padding of its own.
+      -->
+      <div
+        :for={{row, index} <- Enum.with_index(@rows)}
+        class={["grid grid-cols-4 gap-x-14", index == length(@rows) - 1 && "border-t border-base-300 pt-5"]}
+      >
+        <div :for={spec <- row} class="flex flex-col items-center gap-1">
+          <.color_swatch_pair :if={match?({:pair, _, _}, spec)} field_prefix={@field_prefix} spec={spec} colors={@colors} />
+          <.color_swatch_plain :if={match?({:plain, _}, spec)} field_prefix={@field_prefix} spec={spec} colors={@colors} />
         </div>
       </div>
     </div>
     """
   end
 
+  # A single swatch encoding a color/content PAIR at once: bg_key fills the
+  # whole square, fg_key fills a smaller circle centered on top (with the
+  # "A" sample) — clicking the circle edits fg_key, clicking the
+  # surrounding square edits bg_key. Two real <input type="color">s still
+  # exist underneath (form submission needs both as real named inputs
+  # either way), just visually/interactively split by region instead of
+  # shown as two separate swatches — this is what lets the swatch grid
+  # show HALF as many boxes as before for every color that has a genuine
+  # 1:1 "-content" pairing.
   attr :field_prefix, :string, required: true
-  attr :color_key, :string, required: true
-  attr :value, :string, required: true
-  attr :sample, :any, default: nil
+  attr :spec, :any, required: true
+  attr :colors, :map, required: true
 
-  defp color_swatch(assigns) do
+  defp color_swatch_pair(assigns) do
+    {:pair, bg_key, fg_key} = assigns.spec
+    bg = Map.get(assigns.colors, bg_key, "#ffffff")
+    fg = Map.get(assigns.colors, fg_key, "#000000")
+
+    assigns = assign(assigns, bg_key: bg_key, fg_key: fg_key, bg: bg, fg: fg)
+
+    ~H"""
+    <div
+      draggable="true"
+      phx-hook=".ColorSwatchDragHook"
+      data-pair-hex={Jason.encode!(%{bg: @bg, fg: @fg})}
+      data-apply-fn="pair-input"
+      id={"swatch-#{@field_prefix}-#{@bg_key}"}
+      class="relative size-10 rounded-md border border-gray-300 dark:border-gray-600 cursor-grab active:cursor-grabbing shadow-sm overflow-hidden shrink-0"
+      style={"background-color: #{@bg}"}
+    >
+      <!--
+        The fg circle is a SEPARATE <label>, stacked on top via its own
+        absolute positioning rather than relying on any click-region math —
+        each color's native color input only ever needs to cover its own
+        actual hit area (the circle for fg, the full square minus the
+        circle is implicitly the bg label underneath since the circle sits
+        ON TOP of it), so clicks naturally route to whichever element is
+        actually under the cursor with no manual hit-testing needed.
+      -->
+      <label
+        class="absolute inset-0 flex items-center justify-center cursor-pointer"
+        title={"#{@bg_key} — background"}
+      >
+        <input
+          type="color"
+          name={"theme_preset[#{@field_prefix}][#{@bg_key}]"}
+          value={@bg}
+          class="absolute inset-0 opacity-0 cursor-pointer"
+        />
+      </label>
+      <!--
+        The circle is OUTLINE-ONLY (border, transparent fill) in
+        contrast_color(bg) — just enough of a shape to mark out its own hit
+        region against the swatch's background — rather than a solid
+        backdrop: a filled circle competed visually with the swatch's own
+        bg color for attention, when the circle's only real job is framing
+        the "A" letter. The letter itself is fg, at full size/weight, since
+        showing the actual fg color legibly is the whole point of this
+        element — the circle is just scaffolding around it.
+      -->
+      <label
+        class="absolute inset-0 m-auto size-6 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
+        style={"border: 1.5px solid #{contrast_color(@bg)}; color: #{@fg}"}
+        title={"#{@fg_key} — text/icon color on #{@bg_key}"}
+      >
+        A
+        <input
+          type="color"
+          name={"theme_preset[#{@field_prefix}][#{@fg_key}]"}
+          value={@fg}
+          class="absolute inset-0 opacity-0 cursor-pointer rounded-full"
+        />
+      </label>
+      <.color_swatch_drag_hook_script />
+    </div>
+    <span class="text-xs text-base-content/50 text-center leading-tight max-w-14">
+      {ThemePreset.shade_caption(@bg_key)}
+    </span>
+    """
+  end
+
+  # A single plain swatch for a color with no 1:1 "-content" partner —
+  # either a background nothing is ever drawn on top of (window, base-300,
+  # base-200, focus), or a content color shared by MULTIPLE backgrounds
+  # (base-content, drawn on base-100/window/base-300 alike) where merging
+  # it into just one of those would misrepresent the others. Same drag/drop
+  # mechanics as a pair swatch, just carrying one hex instead of two.
+  attr :field_prefix, :string, required: true
+  attr :spec, :any, required: true
+  attr :colors, :map, required: true
+
+  defp color_swatch_plain(assigns) do
+    {:plain, key} = assigns.spec
+    value = Map.get(assigns.colors, key, "#ffffff")
+    assigns = assign(assigns, key: key, value: value)
+
     ~H"""
     <label
       draggable="true"
       phx-hook=".ColorSwatchDragHook"
       data-hex={@value}
       data-apply-fn="input"
-      id={"swatch-#{@field_prefix}-#{@color_key}"}
-      class="relative size-9 rounded-md border border-gray-300 dark:border-gray-600 cursor-grab active:cursor-grabbing flex items-center justify-center text-xs font-bold shadow-sm overflow-hidden shrink-0"
-      style={"background-color: #{@value}; color: #{contrast_color(@value)}"}
-      title={"#{@color_key} — drag to copy, or drop a color here"}
+      id={"swatch-#{@field_prefix}-#{@key}"}
+      class="relative size-10 rounded-md border border-gray-300 dark:border-gray-600 cursor-grab active:cursor-grabbing shadow-sm overflow-hidden shrink-0"
+      style={"background-color: #{@value}"}
+      title={"#{@key} — drag to copy, or drop a color here"}
     >
-      <script :type={Phoenix.LiveView.ColocatedHook} name=".ColorSwatchDragHook">
-        export default {
-          mounted() {
-            // Dragging a swatch (or a filled scratch-pad slot — see
-            // scratch_pad/1, which uses this exact same hook/class on its
-            // own slots) carries its hex color as plain text, so ANY
-            // swatch or slot can be a drop target for ANY other one —
-            // they're all interchangeable, not just theme-swatch ->
-            // scratch-pad in one direction.
-            this.el.addEventListener("dragstart", (e) => {
-              const hex = this.el.dataset.hex
-              if (!hex) { e.preventDefault(); return }
-              e.dataTransfer.setData("text/plain", hex)
-              e.dataTransfer.effectAllowed = "copy"
-            })
-
-            this.el.addEventListener("dragover", (e) => {
-              e.preventDefault()
-              e.dataTransfer.dropEffect = "copy"
-              this.el.classList.add("ring-2", "ring-primary")
-            })
-
-            this.el.addEventListener("dragleave", () => {
-              this.el.classList.remove("ring-2", "ring-primary")
-            })
-
-            this.el.addEventListener("drop", (e) => {
-              e.preventDefault()
-              this.el.classList.remove("ring-2", "ring-primary")
-              const hex = e.dataTransfer.getData("text/plain")
-              if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return
-
-              // A theme swatch's color lives on its own <input
-              // type="color">; a scratch-pad slot (no color input,
-              // nothing to submit) just updates its own swatch appearance
-              // via the colocated applyHex() each kind defines for
-              // itself — see data-apply-fn below.
-              const applyFn = this.el.dataset.applyFn
-              if (applyFn === "input") {
-                const input = this.el.querySelector("input[type=color]")
-                const proto = Object.getPrototypeOf(input)
-                const setter = Object.getOwnPropertyDescriptor(proto, "value").set
-                setter.call(input, hex)
-                input.dispatchEvent(new Event("input", { bubbles: true }))
-                input.dispatchEvent(new Event("change", { bubbles: true }))
-              } else if (applyFn === "scratch-slot") {
-                this.el.dataset.hex = hex
-                this.el.style.backgroundColor = hex
-                this.el.classList.remove("border-dashed")
-                this.el.classList.add("border-solid")
-              }
-            })
-          }
-        }
-      </script>
-      {@sample}
       <input
         type="color"
-        name={"theme_preset[#{@field_prefix}][#{@color_key}]"}
+        name={"theme_preset[#{@field_prefix}][#{@key}]"}
         value={@value}
         class="absolute inset-0 opacity-0 cursor-pointer"
       />
+      <.color_swatch_drag_hook_script />
     </label>
+    <span class="text-xs text-base-content/50 text-center leading-tight max-w-14">
+      {ThemePreset.shade_caption(@key)}
+    </span>
+    """
+  end
+
+  # Shared colocated hook definition, rendered inline by BOTH swatch kinds
+  # (and the scratch pad's own slots below) — Phoenix.LiveView.ColocatedHook
+  # scripts are extracted at COMPILE time keyed by name (see
+  # core_components.ex's moduledoc note on tooltip/1 for the same pattern),
+  # so re-rendering this same <script> tag from multiple call sites costs
+  # nothing at runtime: it registers once in the JS bundle regardless of
+  # how many swatches/slots end up using `phx-hook=".ColorSwatchDragHook"`.
+  defp color_swatch_drag_hook_script(assigns) do
+    ~H"""
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".ColorSwatchDragHook">
+      export default {
+        mounted() {
+          // Dragging a swatch (or a filled scratch-pad slot — see
+          // scratch_pad/1, which uses this exact same hook/class on its
+          // own slots) carries its color(s) as a small JSON payload, so
+          // ANY swatch or slot can be a drop target for ANY other one —
+          // they're all interchangeable, not just theme-swatch ->
+          // scratch-pad in one direction. A plain swatch/slot carries
+          // {hex}; a pair swatch/slot carries {bg, fg} — dragging a pair
+          // always moves BOTH colors together as one unit (there's no way
+          // to drag just one half of a merged swatch).
+          this.el.addEventListener("dragstart", (e) => {
+            // data-pair-hex is already JSON-encoded ({bg, fg}); data-hex
+            // is a bare hex string that needs wrapping to the same
+            // {hex: ...} shape the drop handler expects from every source.
+            let payload
+            if (this.el.dataset.pairHex) {
+              payload = this.el.dataset.pairHex
+            } else if (this.el.dataset.hex) {
+              payload = JSON.stringify({ hex: this.el.dataset.hex })
+            } else {
+              e.preventDefault()
+              return
+            }
+            e.dataTransfer.setData("text/plain", payload)
+            e.dataTransfer.effectAllowed = "copy"
+          })
+
+          this.el.addEventListener("dragover", (e) => {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = "copy"
+            this.el.classList.add("ring-2", "ring-primary")
+          })
+
+          this.el.addEventListener("dragleave", () => {
+            this.el.classList.remove("ring-2", "ring-primary")
+          })
+
+          this.el.addEventListener("drop", (e) => {
+            e.preventDefault()
+            this.el.classList.remove("ring-2", "ring-primary")
+            let payload
+            try {
+              payload = JSON.parse(e.dataTransfer.getData("text/plain"))
+            } catch {
+              return
+            }
+
+            const applyFn = this.el.dataset.applyFn
+            const setInput = (input, hex) => {
+              if (!input || !/^#[0-9a-fA-F]{6}$/.test(hex)) return
+              const proto = Object.getPrototypeOf(input)
+              const setter = Object.getOwnPropertyDescriptor(proto, "value").set
+              setter.call(input, hex)
+              input.dispatchEvent(new Event("input", { bubbles: true }))
+              input.dispatchEvent(new Event("change", { bubbles: true }))
+            }
+
+            if (applyFn === "input" && payload.hex) {
+              setInput(this.el.querySelector("input[type=color]"), payload.hex)
+            } else if (applyFn === "pair-input" && payload.bg && payload.fg) {
+              const inputs = this.el.querySelectorAll("input[type=color]")
+              setInput(inputs[0], payload.bg)
+              setInput(inputs[1], payload.fg)
+            } else if (applyFn === "scratch-slot") {
+              // A scratch slot doesn't know in advance whether it'll
+              // receive a plain color or a bg+fg pair — it just displays
+              // whatever shape actually gets dropped on it, switching its
+              // own fg circle's visibility based on the payload at hand.
+              const circle = this.el.querySelector("[data-scratch-fg-circle]")
+              if (payload.bg && payload.fg) {
+                this.el.dataset.pairHex = JSON.stringify({ bg: payload.bg, fg: payload.fg })
+                delete this.el.dataset.hex
+                this.el.style.backgroundColor = payload.bg
+                circle.style.backgroundColor = payload.fg
+                circle.classList.remove("hidden")
+              } else if (payload.hex) {
+                this.el.dataset.hex = payload.hex
+                delete this.el.dataset.pairHex
+                this.el.style.backgroundColor = payload.hex
+                circle.classList.add("hidden")
+              } else {
+                return
+              }
+              this.el.classList.remove("border-dashed")
+              this.el.classList.add("border-solid")
+            }
+          })
+        }
+      }
+    </script>
     """
   end
 
@@ -1258,23 +1463,26 @@ defmodule AirWeb.Pages.Settings do
 
   defp scratch_pad(assigns) do
     ~H"""
-    <div class={["border border-base-300 rounded-lg p-4 bg-base-100", @class]}>
-      <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">
+    <div class={["border border-base-300 rounded-lg p-3 bg-base-100", @class]}>
+      <h3 class="text-xs font-semibold text-panel-title-content/50 uppercase tracking-wide mb-1">
         Scratch Pad
       </h3>
-      <p class="text-[11px] text-base-content/40 mb-3">
+      <p class="text-[11px] text-base-content/40 mb-2">
         Drag a color from the swatches here to park it, then drag it onto any swatch to apply.
       </p>
       <div class="flex flex-wrap gap-1.5">
-        <label
+        <div
           :for={n <- 1..6}
           draggable="true"
           phx-hook=".ColorSwatchDragHook"
           data-apply-fn="scratch-slot"
           id={"scratch-slot-#{n}"}
-          class="size-9 rounded-md border-2 border-dashed border-base-300 flex-shrink-0 cursor-grab active:cursor-grabbing"
-          title="Drag a color here to park it"
-        />
+          class="relative size-9 rounded-md border-2 border-dashed border-base-300 flex-shrink-0 cursor-grab active:cursor-grabbing"
+          title="Drag a color here to park it (a swatch pair brings both colors)"
+        >
+          <span data-scratch-fg-circle class="hidden absolute inset-0 m-auto size-4 rounded-full ring-1 ring-black/10" />
+          <.color_swatch_drag_hook_script />
+        </div>
       </div>
     </div>
     """
@@ -1305,14 +1513,23 @@ defmodule AirWeb.Pages.Settings do
   defp theme_preview(assigns) do
     ~H"""
     <div
-      class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+      class="flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       style={"background-color: #{Map.get(@colors, "base-100", "#ffffff")}"}
     >
-      <p class="text-[11px] font-semibold uppercase tracking-wide" style={"color: #{Map.get(@colors, "base-content", "#111")}"}>
+      <!--
+        A real panel-title bar (not just text in base-content) — the
+        clearest way to show what panel-title/panel-title-content actually
+        look like together, same role as dag_list.ex's table <thead> or
+        settings.ex's own uppercase section labels.
+      -->
+      <p
+        class="text-[11px] font-semibold uppercase tracking-wide px-4 py-3"
+        style={"background-color: #{Map.get(@colors, "panel-title", "#888")}; color: #{Map.get(@colors, "panel-title-content", "#111")}"}
+      >
         {@title} preview
       </p>
 
-      <div class="grid grid-cols-2 gap-1.5">
+      <div class="grid grid-cols-2 gap-1.5 px-4 pt-2">
         <.preview_button
           label="Primary"
           bg={Map.get(@colors, "primary", "#888")}
@@ -1350,7 +1567,7 @@ defmodule AirWeb.Pages.Settings do
         (mobile) viewport — the hint text is first to drop to its own line
         since it's the least essential of the five items.
       -->
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex flex-wrap items-center gap-1.5 px-4 py-2">
         <button
           type="button"
           class="px-2.5 py-1.5 rounded text-xs font-semibold transition-[filter] hover:brightness-90 active:brightness-75"
@@ -1388,7 +1605,7 @@ defmodule AirWeb.Pages.Settings do
         </span>
       </div>
 
-      <div class="space-y-1.5">
+      <div class="grid grid-cols-2 gap-1.5 px-4">
         <input
           type="text"
           readonly
@@ -1405,7 +1622,21 @@ defmodule AirWeb.Pages.Settings do
         </select>
       </div>
 
-      <div class="space-y-1.5">
+      <!--
+        "+New theme" and a selected theme-list row (theme_tab/1 above) both
+        render with the identical bg-ghost/10 text-ghost combo — there's no
+        third variant to show separately, so one swatch stands in for both.
+      -->
+      <div class="px-4 pt-1.5">
+        <div
+          class="w-full px-2.5 py-1.5 rounded text-xs font-medium"
+          style={"background-color: #{Map.get(@colors, "ghost", "#888")}1a; color: #{Map.get(@colors, "ghost", "#888")}"}
+        >
+          Ghost (selected/active)
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 grid-rows-2 px-4 pt-2 pb-4 gap-1">
         <.preview_alert
           label="Info message"
           bg={Map.get(@colors, "info", "#888")}

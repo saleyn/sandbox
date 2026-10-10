@@ -59,6 +59,10 @@
   --color-field-content: #f9fafb;
   --color-window: #111827;
   --color-focus: #2563eb;
+  --color-panel-title: #4b5563;
+  --color-panel-title-content: #f9fafb;
+  --color-ghost: #2563eb;
+  --color-ghost-content: #2563eb;
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -129,6 +133,29 @@
      primary already had, so existing presets look unchanged until
      someone deliberately picks a different focus color. */
   --color-focus: #2563eb;
+  /* Not a standard daisyUI color. The background of section/table headers
+     (e.g. dag_list.ex's <thead>, settings.ex's uppercase panel section
+     labels) — previously just base-200/base-content at reduced opacity,
+     with no way to recolor a header independently of the hover-state
+     color it happened to share. Defaults to the same base-200 value, so
+     existing presets look unchanged until someone deliberately picks a
+     different header color. */
+  --color-panel-title: #f3f4f6;
+  --color-panel-title-content: #111827;
+  /* Not a standard daisyUI color. The tinted "selected/active, but not a
+     solid filled button" background (e.g. "+ New theme" when nothing else
+     is selected, the active sidebar nav item) — previously hardcoded to
+     primary at a fixed 10% opacity (bg-primary/10), so it could never be
+     tuned independently of primary itself. Call sites apply it the same
+     way (bg-ghost/10), so this needs to stay a plain opaque color like any
+     other theme color, not a pre-mixed translucent value. Defaults to the
+     same value primary already had. ghost-content is the TEXT color on
+     top of it, used both when the opacity-10 tint is showing (selected)
+     and, unlike other pairs, also when ghost's background is fully
+     transparent (not selected) — same as how primary's text-primary was
+     used in both states before. */
+  --color-ghost: #2563eb;
+  --color-ghost-content: #2563eb;
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -139,23 +166,28 @@
   --noise: 0;
 }
 
-/* Registers --color-field/--color-field-content, --color-window, and
-   --color-focus (set per-theme above, and overridable live by a Theme
-   Editor preset) as real Tailwind color utilities (bg-field,
-   text-field-content, bg-window, border-focus, etc.) — daisyUI's own
-   theme plugin only auto-generates utilities for ITS recognized color
-   names (base-*, primary, etc.); none of these three is one of those.
-   Plain `@theme` bakes in whatever value is active AT BUILD TIME, which
-   would freeze these utilities to one theme's colors forever —
-   `@theme inline` instead emits the utility bodies as `var(--color-field)`
-   literally, so they keep tracking whichever theme (or live preset
-   override) is actually active, same as daisyUI's own generated
-   utilities already do. */
+/* Registers --color-field/--color-field-content, --color-window,
+   --color-focus, --color-panel-title/--color-panel-title-content, and
+   --color-ghost/--color-ghost-content (set per-theme above, and
+   overridable live by a Theme Editor preset) as real Tailwind color
+   utilities (bg-field, text-field-content, bg-window, border-focus,
+   bg-panel-title, bg-ghost/10, etc.) — daisyUI's own theme plugin only
+   auto-generates utilities for ITS recognized color names (base-*,
+   primary, etc.); none of these is one of those. Plain `@theme` bakes in
+   whatever value is active AT BUILD TIME, which would freeze these
+   utilities to one theme's colors forever — `@theme inline` instead emits
+   the utility bodies as `var(--color-field)` literally, so they keep
+   tracking whichever theme (or live preset override) is actually active,
+   same as daisyUI's own generated utilities already do. */
 @theme inline {
   --color-field: var(--color-field);
   --color-field-content: var(--color-field-content);
   --color-window: var(--color-window);
   --color-focus: var(--color-focus);
+  --color-panel-title: var(--color-panel-title);
+  --color-panel-title-content: var(--color-panel-title-content);
+  --color-ghost: var(--color-ghost);
+  --color-ghost-content: var(--color-ghost-content);
 }
 
 /* Add variants based on LiveView classes */

@@ -12,12 +12,21 @@ defmodule Air.ThemePreset do
   hover/secondary-fill role — see --color-window in app.css for why those
   two used to collide; has no -content pairing since nothing puts text
   directly on it — it's always a panel/card on top with its own
-  base-content), and `focus` (the field border color on focus — was
+  base-content), `focus` (the field border color on focus — was
   hardcoded to always equal primary, so picking a primary color that
   didn't read well as a focus ring had no fix short of also changing every
-  button's color). Every other key has its paired "-content" (the color
-  text/icons use when sitting on top of it). Only non-color tokens
-  (radius/size/border/depth/noise) are not user-editable here.
+  button's color), `panel-title`/`panel-title-content` (section/table
+  header backgrounds — e.g. a table's <thead> or a form panel's own
+  uppercase section label — was previously just base-200/base-content at
+  reduced opacity, with no way to pick a header color independent of the
+  hover-state color it happened to share), and `ghost`/`ghost-content`
+  (the tinted "selected/active, but not a solid filled button" look — e.g.
+  "+ New theme" when nothing else is selected, or the active sidebar nav
+  item — was hardcoded to primary at a fixed 10% opacity, so it could
+  never be tuned independently of primary itself). Every other key has its
+  paired "-content" (the color text/icons use when sitting on top of it).
+  Only non-color tokens (radius/size/border/depth/noise) are not
+  user-editable here.
 
   `user_id` has no foreign key yet — there's no accounts system in this
   app — so it's a plain string. The "system" sentinel marks presets that
@@ -39,29 +48,35 @@ defmodule Air.ThemePreset do
     field field-content
     window
     focus
+    panel-title panel-title-content
+    ghost ghost-content
   )
 
-  # Swatch grouping/layout for the Theme Editor UI (AirWeb.Pages.Settings),
-  # mirroring daisyUI's own theme generator: each row is a 4-column grid.
-  # "base"'s row packs base-100 (background), window (the app-shell/canvas
-  # surface — placed here, not with field/hover below, since it's a
-  # close cousin of base-100 rather than an interactive state), base-300
-  # (border), and base-content into all 4 columns, since none of those
-  # four need a "-content" swatch of their own except base-content itself.
-  # Every other color is a single color/content pair (2 columns), so two
-  # such groups share a row with a vertical divider between them (columns
-  # 2 and 3) — except the combined hover/focus pair (base-200 and focus,
-  # NEITHER needing a content swatch — both are single accent colors, not
-  # surfaces text sits on), which fills what would otherwise be an empty
-  # 4th column next to its row partner.
-
+  # Swatch grouping/layout for the Theme Editor UI (AirWeb.Pages.Settings).
+  # Each row is a list of swatch specs, one of:
+  #   {:pair, bg_key, fg_key} — ONE swatch showing both colors at once:
+  #     bg_key fills the whole square, fg_key fills a smaller circle
+  #     centered on top (with the "A" sample letter) — clicking inside the
+  #     circle opens fg_key's color picker, clicking the surrounding square
+  #     opens bg_key's. This only applies where a color and its "-content"
+  #     are a genuine 1:1 pair (the text color is ONLY ever drawn on that
+  #     one background) — see AirWeb.Pages.Settings.color_swatch_pair/1.
+  #   {:plain, key} — a single-color swatch, no inner circle, no pairing:
+  #     either a "-content" that's shared by MULTIPLE backgrounds
+  #     (base-content, drawn on base-100/window/base-300 alike — merging it
+  #     into just one of those would misrepresent the other two), or a
+  #     background with no content color at all (window, base-300,
+  #     base-200, focus — nothing is ever drawn directly on top of these).
   @swatch_rows [
-    [{"base", ["base-100", "window", "base-300"], "base-content"}],
-    [{"primary", ["primary"], "primary-content"}, {"field", ["field"], "field-content"}],
-    [{"secondary", ["secondary"], "secondary-content"}, {"info", ["info"], "info-content"}],
-    [{"accent", ["accent"], "accent-content"}, {"success", ["success"], "success-content"}],
-    [{"hover / focus", ["base-200", "focus"], nil}, {"warning", ["warning"], "warning-content"}],
-    [{"neutral", ["neutral"], "neutral-content"}, {"error", ["error"], "error-content"}]
+    [{:pair, "base-100", "base-content"}, {:plain, "window"}, {:plain, "base-300"}, {:pair, "panel-title", "panel-title-content"}],
+    [{:pair, "ghost", "ghost-content"}, {:pair, "primary", "primary-content"}, {:pair, "field", "field-content"}, {:pair, "secondary", "secondary-content"}],
+    [{:plain, "base-200"}, {:plain, "focus"}, {:pair, "accent", "accent-content"}, {:pair, "neutral", "neutral-content"}],
+    [
+      {:pair, "info", "info-content"},
+      {:pair, "success", "success-content"},
+      {:pair, "warning", "warning-content"},
+      {:pair, "error", "error-content"}
+    ]
   ]
 
   # Short (1-2 word) purpose label shown under EVERY swatch in the Theme
@@ -81,6 +96,10 @@ defmodule Air.ThemePreset do
     "focus" => "focus ring",
     "field" => "field background",
     "field-content" => "on field",
+    "panel-title" => "panel title",
+    "panel-title-content" => "on panel title",
+    "ghost" => "ghost",
+    "ghost-content" => "on ghost",
     "primary" => "primary",
     "primary-content" => "on primary",
     "secondary" => "secondary",
