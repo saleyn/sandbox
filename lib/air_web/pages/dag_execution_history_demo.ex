@@ -16,7 +16,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
   @impl true
   def mount(params, _session, socket) do
     dag_id = params["dag_id"] || @def_dag_id
-    tasks = DagExecutionQuery.get_tasks_for_dag(dag_id) |> IO.inspect(label: "tasks")
+    tasks = DagExecutionQuery.get_tasks_for_dag(dag_id)
     stats = DagExecutionQuery.get_dag_stats(dag_id)
     executions = DagExecutionQuery.get_recent_dag_executions(dag_id, @show_max_runs) || []
 
@@ -117,7 +117,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
       run_id = "dag_run_#{System.os_time(:millisecond)}"
 
       # Fetch tasks ordered by task_id to ensure consistent DAG sequence order
-      dag_tasks = Air.Repo.all(from dt in Air.DagTask, where: dt.dag_id == ^dag_id, order_by: dt.task_id)
+      dag_tasks = Air.Repo.all(from dt in Air.DagTask, where: dt.dag_id == ^dag_id, order_by: dt.id)
 
       # Create the run record with :running status
       {:ok, _run} =
@@ -353,6 +353,12 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
         <div :if={@flash["info"]} class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 border border-blue-300 dark:border-blue-600 text-blue-800 dark:text-blue-100 rounded-lg">
           <%= @flash["info"] %>
         </div>
+        <div :if={@flash["success"]} class="mb-4 p-4 bg-green-50 dark:bg-green-900 border border-green-300 dark:border-green-600 text-green-800 dark:text-green-100 rounded-lg">
+          <%= @flash["success"] %>
+        </div>
+        <div :if={@flash["warning"]} class="mb-4 p-4 bg-amber-50 dark:bg-amber-900 border border-amber-300 dark:border-amber-600 text-amber-800 dark:text-amber-100 rounded-lg">
+          <%= @flash["warning"] %>
+        </div>
         <div :if={@flash["error"]} class="mb-4 p-4 bg-red-50 dark:bg-red-900 border border-red-300 dark:border-red-600 text-red-800 dark:text-red-100 rounded-lg">
           <%= @flash["error"] %>
         </div>
@@ -391,6 +397,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
           <DagExecutionHistory.dag_execution_history
             dag_id={@dag_id}
             tasks={@tasks}
+            executions={@executions}
             on_task_click="task_clicked"
             on_run_click="run_clicked"
             task_color_mode={@task_color_mode}

@@ -54,7 +54,9 @@ defmodule AirWeb.Components.DagExecutionHistory do
   - `class` - Additional CSS classes
   """
   attr :id, :string, default: "dag-execution-history", doc: "Stable DOM id for the grid container"
-  attr :executions, :list, required: true, doc: "List of execution runs (most recent last)"
+  attr :dag_id, :string, required: true, doc: "DAG id, used only for the empty-state message"
+  attr :tasks, :list, required: true, doc: "All task_ids for the DAG, in display order (the row labels)"
+  attr :executions, :list, required: true, doc: "List of execution runs (most recent last) — kept live by the caller (e.g. via PubSub updates), NOT re-fetched here"
   attr :on_task_click, :string, default: nil, doc: "Event name to push when a task square is clicked"
   attr :on_run_click, :string, default: nil, doc: "Event name to push when a run's bar is clicked"
 
@@ -69,13 +71,26 @@ defmodule AirWeb.Components.DagExecutionHistory do
     # Get all unique tasks across executions, preserving execution order
     # (order they appear in the first execution, which is their DAG sequence order)
     all_tasks = assigns.tasks
-    dag_id    = assigns.dag_id
-    executions = Air.DagExecutionQuery.get_recent_dag_executions(dag_id, 5) || []
+    # Use the executions the caller already loaded/maintains, rather than
+    # re-querying here — the LiveView keeps this list live-updated via
+    # PubSub (see handle_info({:tasks_updated, ...}) /
+    # handle_info({:dag_run_updated, ...}) in DagExecutionHistoryDemo),
+    # including transient per-render state like `just_failed` (drives the
+    # failure "explosion" animation) that only exists in that in-memory
+    # copy, never in a fresh DB fetch. Re-fetching here previously
+    # silently discarded all of that and could never show the animation.
+    executions = assigns.executions
 
-    # Calculate max duration across all executions for proportional bar sizing
+    # Calculate max duration across all executions for proportional bar
+    # sizing. A run still in progress has duration_ms == nil (only set once
+    # it completes) — Enum.max/2 would otherwise pick nil as the "maximum"
+    # over any real number (nil sorts above numbers in Erlang term
+    # ordering), crashing div(@max_duration_ms, 2) downstream in the
+    # template with an ArithmeticError.
     max_duration_ms =
       executions
       |> Enum.map(& &1.duration_ms)
+      |> Enum.reject(&is_nil/1)
       |> Enum.max(fn -> 0 end)
 
     # Calculate the longest individual task duration across all visible executions
@@ -235,7 +250,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
 
           <!-- Task Names: right border lives here (below the header only),
                separating task names from the execution grid. -->
-          <div :for={task_id <- all_tasks |> IO.inspect(label: "all_tasks")} class="border-r border-gray-300 dark:border-gray-700">
+          <div :for={task_id <- @all_tasks} class="border-r border-gray-300 dark:border-gray-700">
             <div
               class="dag-cell px-6 py-0 h-6 flex items-center border-b border-gray-300 dark:border-gray-700 last:border-b-0 cursor-pointer transition-opacity"
               data-task-name={task_id}
