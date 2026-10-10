@@ -169,7 +169,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
       |> assign(:executions_with_flags, executions_with_flags)
 
     ~H"""
-    <div class={["w-full overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow-lg", @class]}>
+    <div class={["w-full overflow-hidden bg-base-100 text-base-content rounded-lg shadow-lg", @class]}>
       <!-- Main Grid Container: a plain flex row (NOT itself scrollable) with
            two siblings — the frozen task-name column, and a second,
            independently-scrolling area for just the executions grid. Only
@@ -226,22 +226,22 @@ defmodule AirWeb.Components.DagExecutionHistory do
              tooltip, but giving this column a *lower* explicit z keeps
              the tooltip visible when it overflows leftward past the
              column boundary. -->
-        <div class="bg-gray-100 dark:bg-gray-800 flex-shrink-0 relative z-10 shadow-[4px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_6px_-2px_rgba(0,0,0,0.4)]">
+        <div class="bg-window flex-shrink-0 relative z-10 shadow-[4px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_6px_-2px_rgba(0,0,0,0.4)]">
           <!-- Timeline stripe header cell: left-side label for the tick
                row above the Duration axis. Height must match the
                tick-row height on the executions side (h-8) so the
                Duration header and task rows below it stay aligned
                between the frozen column and the scrolling grid. -->
           <div class="h-8 px-3 flex items-end pb-0.5">
-            <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Timeline</p>
+            <p class="text-[10px] font-semibold text-base-content/50 uppercase tracking-wide">Timeline</p>
           </div>
 
           <!-- Header Cell: Duration axis label + tick values. Bottom border only
                (separates header from rows below); no right border here, so it
                doesn't bleed a vertical line through the header area. -->
-          <div class="px-3 py-1 h-40 flex flex-col justify-between border-b border-gray-300 dark:border-gray-700">
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide pt-1">Duration</p>
-            <div class="flex-1 flex flex-col justify-between items-end pb-1 pr-1 font-mono text-[10px] text-gray-500 leading-none text-right">
+          <div class="px-3 py-1 h-40 flex flex-col justify-between border-b border-base-300">
+            <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide pt-1">Duration</p>
+            <div class="flex-1 flex flex-col justify-between items-end pb-1 pr-1 font-mono text-[10px] text-base-content/50 leading-none text-right">
               <span><%= format_axis_duration(@max_duration_ms) %></span>
               <span><%= format_axis_duration(div(@max_duration_ms, 2)) %></span>
               <span><%= format_axis_duration(0) %></span>
@@ -250,12 +250,12 @@ defmodule AirWeb.Components.DagExecutionHistory do
 
           <!-- Task Names: right border lives here (below the header only),
                separating task names from the execution grid. -->
-          <div :for={task_id <- @all_tasks} class="border-r border-gray-300 dark:border-gray-700">
+          <div :for={task_id <- @all_tasks} class="border-r border-base-300">
             <div
-              class="dag-cell px-6 py-0 h-6 flex items-center border-b border-gray-300 dark:border-gray-700 last:border-b-0 cursor-pointer transition-opacity"
+              class="dag-cell px-6 py-0 h-6 flex items-center border-b border-base-300 last:border-b-0 cursor-pointer transition-opacity"
               data-task-name={task_id}
             >
-              <p class="text-xs text-gray-600 dark:text-gray-300 truncate max-w-48" title={task_id}>
+              <p class="text-xs text-base-content/70 truncate max-w-48" title={task_id}>
                 {task_id}
               </p>
             </div>
@@ -278,9 +278,9 @@ defmodule AirWeb.Components.DagExecutionHistory do
                  execution column — without that offset these lines would
                  render over the stripe instead of over the bars. -->
             <div class="absolute inset-x-0 top-8 h-40 flex flex-col justify-between pointer-events-none z-0">
-              <div class="border-t border-gray-300 dark:border-gray-700"></div>
-              <div class="border-t border-gray-300 dark:border-gray-700"></div>
-              <div class="border-t border-gray-400 dark:border-gray-600"></div>
+              <div class="border-t border-base-300"></div>
+              <div class="border-t border-base-300"></div>
+              <div class="border-t border-base-300"></div>
             </div>
             <%= for execution <- @executions_with_flags do %>
               <.execution_column
@@ -296,9 +296,9 @@ defmodule AirWeb.Components.DagExecutionHistory do
           </div>
         </div>
         <% else %>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-          <p class="text-gray-600 dark:text-gray-400 text-lg mb-4">No execution data found for DAG: <%= @dag_id %></p>
-          <p class="text-gray-500 dark:text-gray-500">Run <code class="bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">mix run priv/repo/seeds.exs</code> to populate demo data</p>
+        <div class="bg-base-100 border border-base-300 rounded-lg p-8 text-center">
+          <p class="text-base-content/70 text-lg mb-4">No execution data found for DAG: <%= @dag_id %></p>
+          <p class="text-base-content/50">Run <code class="bg-base-200 px-2 py-1 rounded">mix run priv/repo/seeds.exs</code> to populate demo data</p>
         </div>
         <% end %>
       </div>
@@ -360,12 +360,12 @@ defmodule AirWeb.Components.DagExecutionHistory do
       <div class="h-8 relative min-w-6">
         <div class="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
           <%= if @execution.show_date do %>
-            <span class="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap leading-none">
+            <span class="text-[9px] text-base-content/50 whitespace-nowrap leading-none">
               <%= format_short_date(@execution.start_time) %>
             </span>
           <% end %>
           <%= if @execution.show_time do %>
-            <span class="text-[9px] font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap leading-none">
+            <span class="text-[9px] font-mono text-base-content/50 whitespace-nowrap leading-none">
               <%= @execution.tick_time_label %>
             </span>
           <% end %>
@@ -378,7 +378,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
            the 00:00:00 axis line regardless of flex sizing quirks — only its height
            varies with duration, growing upward from that fixed baseline. -->
       <div
-        class="dag-cell px-0.5 pb-1 min-w-6 flex-shrink-0 h-40 relative z-10 border-r border-gray-200 dark:border-gray-800"
+        class="dag-cell px-0.5 pb-1 min-w-6 flex-shrink-0 h-40 relative z-10 border-r border-base-300"
         data-run-id={@execution.id}
       >
         <button
@@ -407,10 +407,10 @@ defmodule AirWeb.Components.DagExecutionHistory do
       </div>
 
       <!-- Task Status Grid -->
-      <div class="flex-1 border-r border-gray-200 dark:border-gray-800">
+      <div class="flex-1 border-r border-base-300">
         <%= for task_id <- @all_tasks do %>
           <div
-            class="dag-cell px-0.5 py-0 h-6 flex items-center justify-center border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+            class="dag-cell px-0.5 py-0 h-6 flex items-center justify-center border-b border-base-300 last:border-b-0"
             data-task-name={task_id}
             data-run-id={@execution.id}
           >
@@ -522,23 +522,23 @@ defmodule AirWeb.Components.DagExecutionHistory do
            column. Theme-aware: light bg in light mode, dark in dark. -->
       <%= if @task do %>
         <div class="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden peer-hover:block z-50 pointer-events-none opacity-100">
-          <div class="bg-white dark:bg-gray-950 text-gray-900 dark:text-white px-3 py-2 rounded-md shadow-lg text-xs whitespace-nowrap border border-gray-200 dark:border-gray-700 opacity-100">
+          <div class="bg-base-100 text-base-content px-3 py-2 rounded-md shadow-lg text-xs whitespace-nowrap border border-base-300 opacity-100">
             <p class="font-semibold"><%= @task.name %></p>
-            <p class="text-gray-500 dark:text-gray-300 mt-0.5"><%= @status_text %></p>
+            <p class="text-base-content/70 mt-0.5"><%= @status_text %></p>
             <%= if @task.reason do %>
-              <p class="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
+              <p class="text-warning text-xs mt-0.5">
                 Reason: <%= @task.reason %>
               </p>
             <% end %>
-            <p class="text-gray-500 dark:text-gray-400 text-xs">
+            <p class="text-base-content/50 text-xs">
               <%= format_duration(@task.duration_ms) %>
             </p>
-            <p class="text-gray-400 dark:text-gray-500 text-xs mt-0.5">
+            <p class="text-base-content/50 text-xs mt-0.5">
               <%= format_time(@task.start_time) %>
             </p>
 
             <!-- Tooltip arrow (points left) -->
-            <div class="absolute right-full top-1/2 -translate-y-1/2 -mr-0.5 border-4 border-transparent border-r-white dark:border-r-gray-950"></div>
+            <div class="absolute right-full top-1/2 -translate-y-1/2 -mr-0.5 border-4 border-transparent border-r-base-100"></div>
           </div>
         </div>
       <% end %>

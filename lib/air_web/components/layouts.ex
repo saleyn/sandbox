@@ -93,69 +93,122 @@ defmodule AirWeb.Layouts do
 
   def sidebar_shell(assigns) do
     ~H"""
-    <div class="h-screen flex bg-gray-50 dark:bg-gray-900" id="app-shell">
+    <div class="h-screen flex bg-window" id="app-shell">
+      <!-- Below md: off-canvas overlay (fixed, slid out via -translate-x-full,
+           toggled by the top bar's hamburger button) so content gets the
+           full viewport width instead of permanently losing ~224px to a
+           sidebar that can't collapse itself away on a small screen.
+           At/above md: back to a normal in-flow column, collapsible via
+           the existing width-toggling SidebarCollapseHook. Both behaviors
+           share the same markup/hook — only the positioning classes
+           differ per breakpoint. -->
       <aside
         id="app-sidebar"
         phx-hook=".SidebarCollapseHook"
         data-collapsed-class="app-sidebar-collapsed"
-        class="flex flex-col flex-shrink-0 w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-[width] duration-200 overflow-hidden"
+        class="fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 md:static flex flex-col flex-shrink-0 w-56 bg-base-100 border-r border-base-300 transition-[transform,width] duration-200 overflow-hidden"
       >
         <script :type={Phoenix.LiveView.ColocatedHook} name=".SidebarCollapseHook">
           export default {
             mounted() {
-              const STORAGE_KEY = "dagEditor:sidebarCollapsed"
-              const collapsedClass = this.el.dataset.collapsedClass
-              const apply = (collapsed) => this.el.classList.toggle(collapsedClass, collapsed)
-
-              let collapsed = false
-              try { collapsed = localStorage.getItem(STORAGE_KEY) === "true" } catch {}
-              apply(collapsed)
+              this.applyCollapsedFromStorage()
 
               this.el.querySelector("[data-sidebar-toggle]").addEventListener("click", () => {
-                collapsed = !collapsed
-                apply(collapsed)
-                try { localStorage.setItem(STORAGE_KEY, String(collapsed)) } catch {}
+                const collapsedClass = this.el.dataset.collapsedClass
+                const collapsed = !this.el.classList.contains(collapsedClass)
+                this.el.classList.toggle(collapsedClass, collapsed)
+                try { localStorage.setItem(this.storageKey(), String(collapsed)) } catch {}
               })
+
+              // Mobile off-canvas open/close — independent of the
+              // desktop collapse state above (a phone never shows the
+              // "collapsed" 4rem rail, it's either fully open or fully
+              // hidden off-screen).
+              const openClass = "app-sidebar-mobile-open"
+              const backdrop = document.getElementById("app-sidebar-backdrop")
+              const setOpen = (open) => {
+                this.el.classList.toggle(openClass, open)
+                backdrop.classList.toggle("hidden", !open)
+              }
+              document.getElementById("app-sidebar-mobile-toggle").addEventListener("click", () => setOpen(true))
+              backdrop.addEventListener("click", () => setOpen(false))
+              this.el.querySelectorAll("nav a").forEach((link) => link.addEventListener("click", () => setOpen(false)))
+            },
+
+            // Every LiveView patch re-renders this element's class
+            // attribute from the server's markup, which has no idea the
+            // collapsed class was ever toggled (it's pure client-side,
+            // localStorage-backed state — see the moduledoc above
+            // sidebar_shell/1). Without this, any patch to the page
+            // (e.g. clicking a tab that's handled by handle_params, not a
+            // real navigation) silently wipes the collapsed class back
+            // off, snapping the sidebar back open. mounted() alone only
+            // fires once per real DOM-node creation, so the fix has to
+            // reapply on every patch via updated() too.
+            updated() {
+              this.applyCollapsedFromStorage()
+            },
+
+            storageKey() {
+              return "dagEditor:sidebarCollapsed"
+            },
+
+            applyCollapsedFromStorage() {
+              let collapsed = false
+              try { collapsed = localStorage.getItem(this.storageKey()) === "true" } catch {}
+              this.el.classList.toggle(this.el.dataset.collapsedClass, collapsed)
             }
           }
         </script>
 
         <div class="flex items-center gap-2 px-4 py-4 flex-shrink-0">
           <img src={~p"/images/logo.svg"} width="28" class="flex-shrink-0" />
-          <span class="app-sidebar-label font-bold text-gray-900 dark:text-white whitespace-nowrap">Air</span>
+          <span class="app-sidebar-label font-bold text-base-content whitespace-nowrap">Air</span>
         </div>
 
         <nav class="flex-1 px-2 space-y-1">
-          <.sidebar_link navigate={~p"/dags"} current_path={@current_path} match="/dags" icon="hero-rectangle-stack">
-            DAGs
-          </.sidebar_link>
+          <.sidebar_link
+            navigate={~p"/dags"}
+            current_path={@current_path}
+            match="/dags"
+            icon="hero-rectangle-stack"
+            label="DAGs"
+          />
           <.sidebar_link
             navigate={~p"/demo/dag-execution-history"}
             current_path={@current_path}
             match="/demo/dag-execution-history"
             icon="hero-clock"
-          >
-            Execution History
-          </.sidebar_link>
-          <.sidebar_link navigate={~p"/settings"} current_path={@current_path} match="/settings" icon="hero-cog-6-tooth">
-            Settings
-          </.sidebar_link>
+            label="Execution History"
+          />
+          <.sidebar_link
+            navigate={~p"/settings"}
+            current_path={@current_path}
+            match="/settings"
+            icon="hero-cog-6-tooth"
+            label="Settings"
+          />
         </nav>
 
-        <div class="flex items-center justify-between px-2 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div class="app-sidebar-footer flex items-center justify-between px-2 py-3 border-t border-base-300 flex-shrink-0">
           <div class="app-sidebar-label">
             <.theme_toggle />
           </div>
           <button
             type="button"
             data-sidebar-toggle
-            title="Collapse sidebar"
-            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Collapse sidebar"
+            class={["hidden md:block p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200" | tooltip_class(:top)]}
           >
             <.icon name="hero-chevron-double-left" class="size-4 app-sidebar-collapse-icon" />
           </button>
         </div>
       </aside>
+
+      <div
+        id="app-sidebar-backdrop"
+        class="hidden fixed inset-0 z-30 bg-black/40 md:hidden"
+      />
 
       <div class="flex-1 min-w-0 flex flex-col">
         <!-- Top bar: fixed height, never scrolls with the page content
@@ -164,12 +217,21 @@ defmodule AirWeb.Layouts do
              always-visible, page-independent controls (notifications,
              global search, etc.) once they exist. Empty for now beyond
              the placeholder avatar. -->
-        <div class="h-14 flex-shrink-0 flex items-center justify-end gap-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="h-14 flex-shrink-0 flex items-center justify-between gap-3 px-4 border-b border-base-300 bg-base-100">
+          <button
+            type="button"
+            id="app-sidebar-mobile-toggle"
+            aria-label="Open menu"
+            class={["md:hidden p-1.5 -ml-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200" | tooltip_class(:bottom_left)]}
+          >
+            <.icon name="hero-bars-3" class="size-5" />
+          </button>
+          <div class="flex-1"></div>
           <button
             type="button"
             disabled
-            title="Account (not implemented yet)"
-            class="size-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:cursor-default"
+            aria-label="Account (not implemented yet)"
+            class={["size-8 flex items-center justify-center rounded-full bg-base-300 text-base-content/50 disabled:cursor-default" | tooltip_class(:bottom_right)]}
           >
             <.icon name="hero-user" class="size-4" />
           </button>
@@ -182,6 +244,7 @@ defmodule AirWeb.Layouts do
     </div>
 
     <.flash_group flash={@flash} />
+    <.confirm_dialog />
     """
   end
 
@@ -189,23 +252,51 @@ defmodule AirWeb.Layouts do
   attr :current_path, :string, required: true
   attr :match, :string, required: true
   attr :icon, :string, required: true
-  slot :inner_block, required: true
+  attr :label, :string, required: true
 
   defp sidebar_link(assigns) do
     assigns = assign(assigns, :active, String.starts_with?(assigns.current_path, assigns.match))
 
     ~H"""
+    <!--
+      w-full: without it, this link's box is only as wide as its content
+      (icon + padding, since the label is display:none when collapsed —
+      see .app-sidebar-label in app.css), sitting flush against nav's left
+      padding with nothing constraining/centering it against the right
+      edge of the (now much narrower, 4rem) sidebar — the icon LOOKED
+      off-center because the link's own box was off-center, not the icon
+      within it. Stays justify-start (icon flush left, same as always) by
+      default so the expanded layout is unaffected; .app-sidebar-collapsed
+      .app-sidebar-nav-link in app.css switches it to justify-center ONLY
+      while collapsed, centering the lone icon in the now-full-width link.
+
+      aria-label duplicates the visible label text: when collapsed, the
+      <span class="app-sidebar-label"> below is display:none (via app.css),
+      which also removes it from the accessible name computation — without
+      this, a collapsed nav link would announce as unlabeled to a screen
+      reader even though a sighted user still gets the hover tooltip (the
+      link's own ::after, via tooltip_class/1 + app-sidebar-collapsed-tooltip
+      below — CSS reads this same aria-label directly, see .hover-tooltip
+      in app.css — so it never double-tooltips alongside aria-label).
+
+      app-sidebar-collapsed-tooltip (see app.css): only shown while
+      collapsed — expanded already shows the real label inline, a
+      redundant hover tooltip there would be noise.
+    -->
     <.link
       navigate={@navigate}
-      class={[
-        "flex items-center gap-3 px-2.5 py-2 rounded text-sm font-medium transition-colors",
-        @active && "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
-        !@active &&
-          "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-      ]}
+      aria-label={@label}
+      class={
+        [
+          "app-sidebar-nav-link w-full flex items-center justify-start gap-3 px-2.5 py-2 rounded text-sm font-medium transition-colors app-sidebar-collapsed-tooltip",
+          @active && "bg-primary/10 text-primary",
+          !@active &&
+            "text-base-content/70 hover:bg-base-200"
+        ] ++ tooltip_class(:right)
+      }
     >
       <.icon name={@icon} class="size-5 flex-shrink-0" />
-      <span class="app-sidebar-label whitespace-nowrap">{render_slot(@inner_block)}</span>
+      <span class="app-sidebar-label whitespace-nowrap">{@label}</span>
     </.link>
     """
   end
@@ -325,19 +416,10 @@ defmodule AirWeb.Layouts do
         phx-click={JS.hide(to: "#theme-toggle-menu") |> JS.hide(to: "#theme-toggle-backdrop")}
       />
 
-      <!-- dark:bg-gray-800 overrides bg-base-100 specifically in dark
-           mode — daisyUI's own dark-theme --color-base-100 doesn't match
-           the gray-800 surface color used everywhere else in this app
-           (demo page cards, date picker panels, etc.), so without this
-           override the menu looked like a different, inconsistent shade
-           of dark. The dark: variant's extra [data-theme=dark] attribute
-           selector gives it higher specificity than the plain
-           bg-base-100 class, so it reliably wins once dark mode is
-           active; light mode is untouched and still uses bg-base-100. -->
       <div
         id="theme-toggle-menu"
         phx-hook="DropdownPositionHook"
-        class="hidden absolute right-0 mt-2 w-40 flex flex-col gap-0.5 p-1 rounded-lg border border-base-300 bg-base-100 dark:bg-gray-800 text-base-content shadow-lg z-50"
+        class="hidden absolute right-0 mt-2 w-40 flex flex-col gap-0.5 p-1 rounded-lg border border-base-300 bg-base-100 text-base-content shadow-lg z-50"
         role="menu"
       >
         <!-- w-full on every item: without it each button only sizes to

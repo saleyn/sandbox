@@ -19,33 +19,46 @@
 }
 
 /* daisyUI theme plugin.
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+  These two themes intentionally match the app's own hand-built chrome
+  colors (the plain Tailwind gray, blue and red classes layouts.ex and the
+  page modules used before migrating to daisyUI's semantic color
+  utilities) rather than daisyUI's stock palette — so the "Default" look
+  is exactly what this app always looked like, and the Theme Editor's
+  "Default" system preset (see priv/repo/migrations/
+  ..._update_default_theme_preset_to_match_app_chrome.exs) mirrors these
+  same values. Pick a different preset (or paste one from daisyUI's own
+  generator) to get daisyUI's stock colors or anything else. */
 @plugin "daisyui/packages/bundle/daisyui-theme" {
   name: "dark";
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(58% 0.233 277.117);
-  --color-secondary-content: oklch(96% 0.018 272.314);
-  --color-accent: oklch(60% 0.25 292.717);
-  --color-accent-content: oklch(96% 0.016 293.756);
-  --color-neutral: oklch(37% 0.044 257.287);
-  --color-neutral-content: oklch(98% 0.003 247.858);
-  --color-info: oklch(58% 0.158 241.966);
-  --color-info-content: oklch(97% 0.013 236.62);
-  --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
+  --color-base-100: #1f2937;
+  --color-base-200: #4b5563;
+  --color-base-300: #374151;
+  --color-base-content: #f9fafb;
+  --color-primary: #2563eb;
+  --color-primary-content: #ffffff;
+  --color-secondary: #374151;
+  --color-secondary-content: #d1d5db;
+  --color-accent: #3b82f6;
+  --color-accent-content: #ffffff;
+  --color-neutral: #4b5563;
+  --color-neutral-content: #f9fafb;
+  --color-info: #3b82f6;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #052e16;
+  --color-warning: #f59e0b;
+  --color-warning-content: #451a03;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+  /* Not standard daisyUI colors — see their own comments below the light
+     theme's block for why this app adds them. */
+  --color-field: #374151;
+  --color-field-content: #f9fafb;
+  --color-window: #111827;
+  --color-focus: #2563eb;
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -61,26 +74,61 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
+  --color-base-100: #ffffff;
+  --color-base-200: #f3f4f6;
+  --color-base-300: #e5e7eb;
+  --color-base-content: #111827;
+  --color-primary: #2563eb;
+  --color-primary-content: #ffffff;
+  --color-secondary: #e5e7eb;
+  --color-secondary-content: #374151;
+  --color-accent: #2563eb;
+  --color-accent-content: #ffffff;
+  --color-neutral: #374151;
+  --color-neutral-content: #ffffff;
+  --color-info: #2563eb;
+  --color-info-content: #ffffff;
+  --color-success: #16a34a;
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-content: #78350f;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+  /* Not a standard daisyUI color. Form input/select/textarea backgrounds
+     (bg-field, see the .input/.select/.textarea-equivalent helper classes
+     below) use this instead of base-100/200/300 so field color can be
+     tuned independently of surrounding panels — matching how
+     assets/js/grafana-date-picker.js (the one piece of UI whose field
+     styling predates and inspired this) always kept its own From/To/
+     search inputs visually distinct from the dropdown panel they sit in:
+     white-on-white here in light mode (matching the picker, which also
+     doesn't distinguish field from panel when the panel is already
+     white), but see the dark theme's block above for where this actually
+     diverges from base-100 and does the useful work. */
+  --color-field: #ffffff;
+  --color-field-content: #111827;
+  /* Not a standard daisyUI color. base-200 used to double as BOTH the
+     hover/secondary-fill color (hover:bg-base-200, bg-base-200 on
+     secondary buttons) AND the main app-shell/window background
+     (Layouts.sidebar_shell, the DAG editor's canvas wrapper) — meaning
+     hovering something made it visually blend into the window behind it,
+     since they were the exact same color. window is the app-shell/canvas/
+     other top-level-surface background now, separate from base-200's
+     hover/secondary-fill role; base-200 was bumped to a shade (#f3f4f6
+     light / see dark theme's block for #4b5563) that's visibly distinct
+     from both base-100 (panels), base-300 (borders), AND this window
+     color. No window-content pairing — nothing puts text directly on the
+     window background, it's always a panel/card on top with its own
+     base-content. */
+  --color-window: #f9fafb;
+  /* Not a standard daisyUI color. The focus-ring/border color every text
+     input/select/textarea switches to on focus (see field_class/0 in
+     core_components.ex) — previously hardcoded to always equal primary,
+     so a theme preset couldn't make its focus indicator legible without
+     also changing its primary button color. Defaults to the same value
+     primary already had, so existing presets look unchanged until
+     someone deliberately picks a different focus color. */
+  --color-focus: #2563eb;
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -89,6 +137,25 @@
   --border: 1.5px;
   --depth: 1;
   --noise: 0;
+}
+
+/* Registers --color-field/--color-field-content, --color-window, and
+   --color-focus (set per-theme above, and overridable live by a Theme
+   Editor preset) as real Tailwind color utilities (bg-field,
+   text-field-content, bg-window, border-focus, etc.) — daisyUI's own
+   theme plugin only auto-generates utilities for ITS recognized color
+   names (base-*, primary, etc.); none of these three is one of those.
+   Plain `@theme` bakes in whatever value is active AT BUILD TIME, which
+   would freeze these utilities to one theme's colors forever —
+   `@theme inline` instead emits the utility bodies as `var(--color-field)`
+   literally, so they keep tracking whichever theme (or live preset
+   override) is actually active, same as daisyUI's own generated
+   utilities already do. */
+@theme inline {
+  --color-field: var(--color-field);
+  --color-field-content: var(--color-field-content);
+  --color-window: var(--color-window);
+  --color-focus: var(--color-focus);
 }
 
 /* Add variants based on LiveView classes */
@@ -207,17 +274,148 @@
 .app-sidebar-collapsed .app-sidebar-collapse-icon {
   transform: rotate(180deg);
 }
+/* The footer row normally holds two items side by side (theme toggle +
+   collapse button), spread apart via justify-between. Collapsing the
+   sidebar hides the theme toggle entirely (it's .app-sidebar-label, see
+   above) — justify-between with only ONE remaining flex child pins that
+   child to one end of the row rather than centering it, which is why the
+   collapse button sat flush left instead of centered under the nav icons
+   above it. justify-center only takes effect once collapsed, so the
+   expanded two-item layout is untouched. */
+.app-sidebar-collapsed .app-sidebar-footer {
+  justify-content: center;
+}
+/* Nav links default to justify-start (icon flush left, see
+   .app-sidebar-nav-link in layouts.ex) so the expanded icon+label row
+   reads left-to-right normally. Once collapsed the label disappears
+   entirely and the link's own box is w-full — without recentering, the
+   lone icon stays pinned to the link's left padding instead of sitting
+   centered under the sidebar's own centered footer button above/below it. */
+.app-sidebar-collapsed .app-sidebar-nav-link {
+  justify-content: center;
+}
+/* The nav link's own hover tooltip (.app-sidebar-collapsed-tooltip, built
+   on the shared .hover-tooltip below) only makes sense once collapsed —
+   expanded already shows the real label inline right next to the icon, so
+   a redundant popup on hover there would just be noise. Overriding
+   .hover-tooltip's own :hover rule back to invisible unless this ancestor
+   is also collapsed keeps it inert whenever expanded, regardless of hover
+   state. */
+.app-sidebar-collapsed-tooltip::after {
+  opacity: 0 !important;
+}
+.app-sidebar-collapsed .app-sidebar-collapsed-tooltip:hover::after {
+  opacity: 1 !important;
+}
+
+/* Shared custom hover tooltip for icon-only buttons app-wide (Settings'
+   Copy/Paste buttons, the sidebar's collapse/menu/account buttons,
+   dag_list's row actions, dag_editor's Undo/Redo, etc). Pair with an
+   `aria-label` on the trigger (for screen readers) instead of a native
+   `title` — using both fires two overlapping tooltips (the OS-drawn one
+   from `title` and this CSS one), so `title` is intentionally never used
+   alongside this class.
+
+   Pure CSS, no JS/hook at all: `content: attr(aria-label)` on `::after`
+   reads the trigger's OWN aria-label attribute directly — CSS has no way
+   to read an ANCESTOR's attribute, so the pseudo-element has to live on
+   the trigger itself (`.hover-tooltip`), not on a separate child <span>.
+   Every one of these buttons already needs aria-label for accessibility,
+   so the tooltip text is never duplicated anywhere, in markup or JS.
+   `content: attr(aria-label)` is the original CSS2.1 plain string-attr
+   form (not the newer `attr() type()` syntax), universally supported.
+
+   The TRIGGER itself gets the `group relative hover-tooltip` classes
+   (see `AirWeb.CoreComponents.tooltip_classes/1`) plus its own
+   `data-tooltip-position` utility classes placing the ::after relative to
+   the trigger's own box, since trigger buttons sit in different
+   corners/rows. */
+.hover-tooltip {
+  position: relative;
+}
+.hover-tooltip::after {
+  content: attr(aria-label);
+  pointer-events: none;
+  position: absolute;
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  background-color: var(--color-neutral);
+  color: var(--color-neutral-content);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  padding: 0.25rem 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  z-index: 10;
+}
+.hover-tooltip:hover::after {
+  opacity: 1;
+}
+/* Position modifiers — pick ONE per trigger based on which corner/edge of
+   the button the tooltip should hang off, matching wherever there's open
+   space in that part of the page (e.g. a top-row button points its
+   tooltip down via -top, a bottom-row button points it up via -bottom).
+   These can't be plain Tailwind utility classes on the trigger itself
+   (e.g. `top-full right-0`) because the positioned box is the ::after
+   PSEUDO-element, not the trigger element those utilities would apply to
+   — Tailwind has no built-in variant targeting `::after` positioning like
+   this, so each direction is spelled out here once instead. */
+.hover-tooltip-top::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.25rem;
+}
+.hover-tooltip-bottom::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.25rem;
+}
+.hover-tooltip-bottom-right::after {
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+}
+.hover-tooltip-bottom-left::after {
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+}
+.hover-tooltip-top-right::after {
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.25rem;
+}
+.hover-tooltip-top-left::after {
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.25rem;
+}
+.hover-tooltip-right::after {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0.5rem;
+}
+
+/* Mobile off-canvas open state (below md) — slides the fixed-position
+   sidebar back into view over the page content; irrelevant at/above md
+   where the sidebar is static/in-flow (its md:translate-x-0 always wins).
+   Tailwind v4's translate utilities set the native CSS `translate`
+   property (via a --tw-translate-x custom property), not `transform` —
+   this has to match or it's simply a different property that does
+   nothing to override -translate-x-full. */
+.app-sidebar-mobile-open {
+  translate: 0 0;
+}
 
 /* DagEditor (dag-editor/dag-editor.js) node styling — plain/flat look:
    white rounded-rect task boxes with a thin border, and a diamond for
    condition/branch nodes. Scoped under #dag-canvas-wrapper so it only
    applies within the DAG editor, not globally. */
 #dag-canvas-wrapper {
-  background-color: #f9fafb;
-}
-#dag-canvas-wrapper.dag-editor-dark,
-#dag-canvas-wrapper .dag-editor-dark {
-  background-color: #111827;
+  background-color: var(--color-window);
 }
 /* Two independent gradient layers sharing the same background-position
    (kept in sync with pan in _applyTransform) but different
@@ -262,22 +460,14 @@
   border-radius: 4px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  background: rgba(255, 255, 255, 0.85);
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  border: 1px solid var(--color-base-300);
   cursor: pointer;
   user-select: none;
 }
 .dag-editor-zoom-readout:hover {
-  background: rgba(243, 244, 246, 0.95);
-}
-.dag-editor-dark .dag-editor-zoom-readout {
-  background: rgba(31, 41, 55, 0.85);
-  color: #e5e7eb;
-  border-color: #4b5563;
-}
-.dag-editor-dark .dag-editor-zoom-readout:hover {
-  background: rgba(55, 65, 81, 0.95);
+  background: var(--color-base-200);
 }
 .dag-editor-edges {
   position: absolute;
@@ -290,19 +480,13 @@
 }
 .dag-editor-edge {
   fill: none;
-  stroke: #64748b;
-}
-.dag-editor-dark .dag-editor-edge {
-  stroke: #94a3b8;
+  stroke: var(--color-neutral);
 }
 /* The arrowhead marker is defined once in <defs> and shared by every edge,
    so it can't simply inherit each path's own stroke color — styled to the
    same color edges use instead. */
 .dag-editor-arrowhead {
-  fill: #64748b;
-}
-.dag-editor-dark .dag-editor-arrowhead {
-  fill: #94a3b8;
+  fill: var(--color-neutral);
 }
 /* The svg.dag-editor-edges layer itself is pointer-events:none (so clicks
    pass through to nodes/empty canvas beneath), but the per-edge midpoint
@@ -317,7 +501,7 @@
    feedback of exactly where the control point is even if the drag moves
    the cursor away from it. */
 .dag-editor-edge-handle {
-  fill: #64748b;
+  fill: var(--color-neutral);
   stroke: transparent;
   stroke-width: 1.5px;
   opacity: 0;
@@ -325,20 +509,14 @@
      the actual axis a drag will move it along — see _renderEdgeHandle. */
   pointer-events: all;
 }
-.dag-editor-dark .dag-editor-edge-handle {
-  fill: #94a3b8;
-}
 .dag-editor-edge-handle:hover {
   opacity: 1;
 }
 .dag-editor-edge-handle.is-dragging {
   opacity: 1;
   fill: none;
-  stroke: #64748b;
+  stroke: var(--color-neutral);
   stroke-width: 2px;
-}
-.dag-editor-dark .dag-editor-edge-handle.is-dragging {
-  stroke: #94a3b8;
 }
 .dag-editor-drag-preview {
   position: absolute;
@@ -356,8 +534,8 @@
 }
 .dag-editor-marquee {
   position: absolute;
-  border: 1px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   pointer-events: none;
   z-index: 6;
 }
@@ -380,21 +558,16 @@
 }
 .dag-node-task {
   border-radius: 6px;
-  background: #ffffff;
-  /* Matches .dag-editor-edge's light-mode stroke (#64748b) — a lighter,
+  background: var(--color-base-100);
+  /* Matches .dag-editor-edge's stroke (var(--color-neutral)) — a lighter,
      more neutral gray here read as disconnected from the arrows pointing
      at it. */
-  border: 1px solid #64748b;
+  border: 1px solid var(--color-neutral);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: #333;
-}
-.dag-editor-dark .dag-node-task {
-  background: #1f2937;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  color: var(--color-base-content);
 }
 .dag-node-task.is-selected {
   border-color: #fbbf24;
@@ -412,17 +585,13 @@
 .dag-node-condition .diamond-shape {
   position: absolute;
   inset: 9px;
-  background: #ffffff;
-  /* See .dag-node-task above — matches .dag-editor-edge's light-mode
+  background: var(--color-base-100);
+  /* See .dag-node-task above — matches .dag-editor-edge's
      stroke color. */
-  border: 1px solid #64748b;
+  border: 1px solid var(--color-neutral);
   transform: rotate(45deg);
   box-sizing: border-box;
   pointer-events: none;
-}
-.dag-editor-dark .dag-node-condition .diamond-shape {
-  background: #1f2937;
-  border-color: #4b5563;
 }
 .dag-node-condition.is-selected .diamond-shape {
   border-color: #fbbf24;
@@ -436,12 +605,9 @@
 .dag-node-condition .label {
   position: absolute;
   font-size: 12px;
-  color: #333;
+  color: var(--color-base-content);
   white-space: nowrap;
   pointer-events: none;
-}
-.dag-editor-dark .dag-node-condition .label {
-  color: #e5e7eb;
 }
 .dag-node-condition .label.label-inside {
   left: 50%;
@@ -469,29 +635,21 @@
   position: absolute;
   width: 12px;
   height: 12px;
-  background: #ffffff;
+  background: var(--color-base-100);
   border: 1px solid #999;
   border-radius: 50%;
   cursor: crosshair;
 }
-.dag-editor-dark .connector-handle {
-  background: #374151;
-  border-color: #6b7280;
-}
-/* A connected handle's color matches the edge/arrow color (#64748b light /
-   #94a3b8 dark — see .dag-editor-edge) rather than a separate, more
-   saturated blue — the previous blue read as too dark/heavy against the
-   light-theme canvas, and didn't visually match the line it's attached
-   to. The border is the full slate tone (darker, for definition); the
-   fill is a lighter tint of the same hue so the dot doesn't look like a
-   solid ink blot at small sizes. */
+/* A connected handle's color matches the edge/arrow color (var(--color-neutral)
+   — see .dag-editor-edge) rather than a separate, more saturated blue — the
+   previous blue read as too dark/heavy against the light-theme canvas, and
+   didn't visually match the line it's attached to. The border is the full
+   neutral tone (darker, for definition); the fill is a lighter tint of the
+   same hue — expressed as a color-mix against the node fill — so the dot
+   doesn't look like a solid ink blot at small sizes. */
 .connector-handle.has-connection {
-  background: #cbd5e1;
-  border-color: #64748b;
-}
-.dag-editor-dark .connector-handle.has-connection {
-  background: #475569;
-  border-color: #94a3b8;
+  background: color-mix(in srgb, var(--color-neutral) 40%, var(--color-base-100));
+  border-color: var(--color-neutral);
 }
 /* The ingress (input) handle is only ever a drop target, never something
    the user drags from — once connected it's just visual noise sitting on
@@ -612,17 +770,13 @@
 .dag-editor-context-menu {
   position: fixed;
   z-index: 50;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 4px;
   min-width: 160px;
   font-size: 13px;
-}
-.dag-editor-context-menu.dag-editor-dark {
-  background: #1f2937;
-  border-color: #4b5563;
 }
 .dag-editor-context-menu-item {
   position: relative;
@@ -631,18 +785,12 @@
   gap: 8px;
   padding: 6px 10px;
   border-radius: 4px;
-  color: #1f2937;
+  color: var(--color-base-content);
   cursor: pointer;
   white-space: nowrap;
 }
-.dag-editor-dark .dag-editor-context-menu-item {
-  color: #e5e7eb;
-}
 .dag-editor-context-menu-item:hover {
-  background: #f3f4f6;
-}
-.dag-editor-dark .dag-editor-context-menu-item:hover {
-  background: #374151;
+  background: var(--color-base-200);
 }
 .dag-editor-context-menu-item.is-disabled {
   color: #9ca3af;
@@ -657,10 +805,7 @@
 .dag-editor-context-menu-separator {
   height: 1px;
   margin: 4px 6px;
-  background: #e5e7eb;
-}
-.dag-editor-dark .dag-editor-context-menu-separator {
-  background: #4b5563;
+  background: var(--color-base-300);
 }
 /* Label is the only flexible child, so a fixed-width icon gutter stays put
    on the left and the submenu caret (when present) is pushed flush right —

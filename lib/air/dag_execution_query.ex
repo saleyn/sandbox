@@ -18,7 +18,7 @@ defmodule Air.DagExecutionQuery do
   - `:limit` - Maximum number of runs to return (default: 10)
   - `:offset` - Number of runs to skip (default: 0)
   """
-  def get_tasks_for_dag(dag_id, opts \\ []) do
+  def get_tasks_for_dag(dag_id, _opts \\ []) do
     Air.DagTask
     |> where(dag_id: ^dag_id)
     |> order_by(asc: :id)

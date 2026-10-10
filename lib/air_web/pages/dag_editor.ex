@@ -171,18 +171,18 @@ defmodule AirWeb.Pages.DagEditor do
            are now outside #dag-editor-root, DagEditorHook's
            [data-graph-action] click handler listens on `document` rather
            than the hook's own element, so Save etc. still reach it. -->
-      <div class="flex items-center gap-4 px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white flex-shrink-0">DAG Editor</h1>
-        <span class="text-lg text-gray-700 dark:text-gray-300 truncate"><%= @dag.title %></span>
+      <div class="flex items-center gap-4 px-4 py-2 bg-base-100 border-b border-base-300 flex-shrink-0">
+        <h1 class="text-xl font-bold text-base-content flex-shrink-0">DAG Editor</h1>
+        <span class="text-lg text-base-content/70 truncate"><%= @dag.title %></span>
 
         <div class="flex items-center gap-3 ml-auto">
           <button
             type="button"
             id="dag-editor-undo-btn"
             data-graph-action="undo"
-            title="Undo (Ctrl+Z)"
+            aria-label="Undo (Ctrl+Z)"
             disabled
-            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            class={["p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors" | tooltip_class(:bottom)]}
           >
             <.icon name="hero-arrow-uturn-left" class="size-4" />
           </button>
@@ -190,9 +190,9 @@ defmodule AirWeb.Pages.DagEditor do
             type="button"
             id="dag-editor-redo-btn"
             data-graph-action="redo"
-            title="Redo (Ctrl+Shift+Z)"
+            aria-label="Redo (Ctrl+Shift+Z)"
             disabled
-            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            class={["p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors" | tooltip_class(:bottom)]}
           >
             <.icon name="hero-arrow-uturn-right" class="size-4" />
           </button>
@@ -200,21 +200,21 @@ defmodule AirWeb.Pages.DagEditor do
           <button
             type="button"
             phx-click="open_properties_drawer"
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
           >
-            <.icon name="hero-pencil-square" class="size-4 text-gray-500 dark:text-gray-400" /> Edit
+            <.icon name="hero-pencil-square" class="size-4 text-base-content/50" /> Edit
           </button>
 
           <button
             data-graph-action="save"
-            class="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors"
+            class="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors"
           >
             <.icon name="hero-arrow-down-tray" class="size-4" /> Save
           </button>
 
           <a
             href={~p"/demo/dag-execution-history"}
-            class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+            class="px-3 py-1.5 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
           >
             ← History
           </a>
@@ -237,7 +237,7 @@ defmodule AirWeb.Pages.DagEditor do
         phx-update="ignore"
         data-graph={@graph_data}
         data-settings={@settings_data}
-        class="bg-gray-50 dark:bg-gray-900 flex-1 min-h-0 flex flex-col"
+        class="bg-window flex-1 min-h-0 flex flex-col"
       >
         <!-- Flash Messages (rendered outside phx-update="ignore" would
              be ideal, but since the whole hook div is ignore, we handle
@@ -288,31 +288,31 @@ defmodule AirWeb.Pages.DagEditor do
           phx-hook="TaskModalTabsHook"
           data-closing-event="close_modal"
           phx-mounted={JS.remove_class("translate-x-full", to: "#task-modal") |> JS.add_class("translate-x-0", to: "#task-modal")}
-          class="absolute inset-y-0 right-0 bg-white dark:bg-gray-800 shadow-xl border-l border-gray-200 dark:border-gray-700 w-full sm:w-[min(50rem,90vw)] flex flex-col translate-x-full transition-transform duration-300 ease-out"
+          class="absolute inset-y-0 right-0 bg-base-100 shadow-xl border-l border-base-300 w-full sm:w-[min(50rem,90vw)] flex flex-col translate-x-full transition-transform duration-300 ease-out"
         >
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Task Properties</h2>
+          <div class="flex items-center justify-between px-6 py-4 border-b border-base-300 flex-shrink-0">
+            <h2 class="text-lg font-bold text-base-content">Task Properties</h2>
             <button
               phx-click={close_drawer()}
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+              class="text-base-content/50 hover:text-base-content/70 transition"
             >
               ✕
             </button>
           </div>
 
           <!-- Tabs -->
-          <div class="flex px-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div class="flex px-6 border-b border-base-300 flex-shrink-0">
             <button
               type="button"
               data-tab-button="properties"
-              class="px-3 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+              class="px-3 py-2 text-sm font-medium border-b-2 border-primary text-primary"
             >
               Properties
             </button>
             <button
               type="button"
               data-tab-button="source"
-              class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-base-content/50 hover:text-base-content/70"
             >
               Source Code
             </button>
@@ -323,20 +323,20 @@ defmodule AirWeb.Pages.DagEditor do
 
             <div data-tab-panel="properties" class="px-6 py-4 space-y-4 overflow-y-auto">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+                <label class="block text-sm font-medium text-base-content/70 mb-1">Task Name</label>
                 <input
                   type="text"
                   name="task_id"
                   value={@selected_task["task_id"]}
-                  class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                  class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                 />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Type</label>
+                <label class="block text-sm font-medium text-base-content/70 mb-1">Task Type</label>
                 <select
                   name="task_type"
-                  class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                  class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                 >
                   <option value="task" selected={@selected_task["task_type"] == "task"}>Task</option>
                   <option value="condition" selected={@selected_task["task_type"] == "condition"}>Condition</option>
@@ -345,51 +345,51 @@ defmodule AirWeb.Pages.DagEditor do
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pool</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Pool</label>
                   <input
                     type="text"
                     name="pool"
                     value={@selected_task["pool"] || "default_pool"}
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Queue</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Queue</label>
                   <input
                     type="text"
                     name="queue"
                     value={@selected_task["queue"] || "default"}
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
               </div>
 
               <div class="grid grid-cols-3 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Priority</label>
                   <input
                     type="number"
                     name="priority_weight"
                     value={@selected_task["priority_weight"] || 1}
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Tries</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Max Tries</label>
                   <input
                     type="number"
                     name="max_tries"
                     value={@selected_task["max_tries"] || 0}
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pool Slots</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Pool Slots</label>
                   <input
                     type="number"
                     name="pool_slots"
                     value={@selected_task["pool_slots"] || 1}
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
               </div>
@@ -397,11 +397,11 @@ defmodule AirWeb.Pages.DagEditor do
 
             <div data-tab-panel="source" class="hidden px-6 py-4 flex-1 min-h-0 flex flex-col">
               <div class="flex items-center justify-between mb-1 flex-shrink-0">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source Code</label>
+                <label class="block text-sm font-medium text-base-content/70">Source Code</label>
                 <select
                   name="source_language"
                   data-code-editor-language-select
-                  class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 text-xs"
+                  class="px-2 py-1 bg-field border border-base-300 rounded text-field-content/70 text-xs"
                 >
                   <option value="python" selected={@selected_task["source_language"] in [nil, "python"]}>Python</option>
                   <option value="shell" selected={@selected_task["source_language"] == "shell"}>Shell</option>
@@ -415,23 +415,23 @@ defmodule AirWeb.Pages.DagEditor do
                 phx-update="ignore"
                 data-source-code={@selected_task["source_code"] || ""}
                 data-source-language={@selected_task["source_language"] || "python"}
-                class="border border-gray-300 dark:border-gray-600 rounded overflow-hidden flex-1 min-h-0"
+                class="border border-base-300 rounded overflow-hidden flex-1 min-h-0"
               >
                 <textarea name="source_code" class="hidden"><%= @selected_task["source_code"] || "" %></textarea>
               </div>
             </div>
 
-            <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-base-300 flex-shrink-0">
               <button
                 type="button"
                 phx-click={close_drawer()}
-                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors"
+                class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors"
               >
                 Save Properties
               </button>
@@ -470,30 +470,30 @@ defmodule AirWeb.Pages.DagEditor do
             JS.remove_class("translate-x-full", to: "#dag-properties-drawer")
             |> JS.add_class("translate-x-0", to: "#dag-properties-drawer")
           }
-          class="absolute inset-y-0 right-0 bg-white dark:bg-gray-800 shadow-xl border-l border-gray-200 dark:border-gray-700 w-full sm:w-[min(50rem,90vw)] flex flex-col translate-x-full transition-transform duration-300 ease-out"
+          class="absolute inset-y-0 right-0 bg-base-100 shadow-xl border-l border-base-300 w-full sm:w-[min(50rem,90vw)] flex flex-col translate-x-full transition-transform duration-300 ease-out"
         >
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">DAG Properties</h2>
+          <div class="flex items-center justify-between px-6 py-4 border-b border-base-300 flex-shrink-0">
+            <h2 class="text-lg font-bold text-base-content">DAG Properties</h2>
             <button
               phx-click={close_properties_drawer()}
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+              class="text-base-content/50 hover:text-base-content/70 transition"
             >
               ✕
             </button>
           </div>
 
-          <div class="flex px-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div class="flex px-6 border-b border-base-300 flex-shrink-0">
             <button
               type="button"
               data-tab-button="properties"
-              class="px-3 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+              class="px-3 py-2 text-sm font-medium border-b-2 border-primary text-primary"
             >
               Properties
             </button>
             <button
               type="button"
               data-tab-button="source"
-              class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-base-content/50 hover:text-base-content/70"
             >
               Source Code
             </button>
@@ -512,14 +512,14 @@ defmodule AirWeb.Pages.DagEditor do
                   value={@dag_id}
                   label="ID"
                   disabled
-                  class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-sm font-mono"
+                  class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm font-mono"
                 />
                 <div class="col-span-2">
                   <.input
                     field={@properties_form[:title]}
                     type="text"
                     label="Title"
-                    class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
                   />
                 </div>
               </div>
@@ -528,14 +528,14 @@ defmodule AirWeb.Pages.DagEditor do
                 field={@properties_form[:description]}
                 type="textarea"
                 label="Description"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
               />
 
               <.input
                 field={@properties_form[:owner]}
                 type="text"
                 label="Owner"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
               />
 
               <.chip_list_input field={@properties_form[:maintainers]} label="Maintainers" />
@@ -544,64 +544,64 @@ defmodule AirWeb.Pages.DagEditor do
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Created</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Created</label>
                   <input
                     type="text"
                     value={format_timestamp(@dag.inserted_at)}
                     disabled
-                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-sm"
+                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Updated</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Last Updated</label>
                   <input
                     type="text"
                     value={format_timestamp(@dag.updated_at)}
                     disabled
-                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-sm"
+                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Created By</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Created By</label>
                   <input
                     type="text"
                     value={@dag.created_by || "—"}
                     disabled
-                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-sm"
+                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Updated By</label>
+                  <label class="block text-sm font-medium text-base-content/70 mb-1">Updated By</label>
                   <input
                     type="text"
                     value={@dag.updated_by || "—"}
                     disabled
-                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-sm"
+                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
                   />
                 </div>
               </div>
 
-              <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Execution Stats</h3>
+              <div class="pt-2 border-t border-base-300">
+                <h3 class="text-sm font-semibold text-base-content/70 mb-2">Execution Stats</h3>
                 <div class="grid grid-cols-4 gap-3 text-center">
-                  <div class="bg-gray-50 dark:bg-gray-900 rounded p-2">
-                    <div class="text-lg font-bold text-gray-900 dark:text-white"><%= @execution_stats.total_runs %></div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Total runs</div>
+                  <div class="bg-base-200 rounded p-2">
+                    <div class="text-lg font-bold text-base-content"><%= @execution_stats.total_runs %></div>
+                    <div class="text-xs text-base-content/50">Total runs</div>
                   </div>
-                  <div class="bg-gray-50 dark:bg-gray-900 rounded p-2">
+                  <div class="bg-base-200 rounded p-2">
                     <div class="text-lg font-bold text-green-600 dark:text-green-400"><%= @execution_stats.success_count %></div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Succeeded</div>
+                    <div class="text-xs text-base-content/50">Succeeded</div>
                   </div>
-                  <div class="bg-gray-50 dark:bg-gray-900 rounded p-2">
+                  <div class="bg-base-200 rounded p-2">
                     <div class="text-lg font-bold text-red-600 dark:text-red-400"><%= @execution_stats.failed_count %></div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Failed</div>
+                    <div class="text-xs text-base-content/50">Failed</div>
                   </div>
-                  <div class="bg-gray-50 dark:bg-gray-900 rounded p-2">
-                    <div class="text-lg font-bold text-gray-900 dark:text-white"><%= format_duration(@execution_stats.avg_duration_ms) %></div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Avg duration</div>
+                  <div class="bg-base-200 rounded p-2">
+                    <div class="text-lg font-bold text-base-content"><%= format_duration(@execution_stats.avg_duration_ms) %></div>
+                    <div class="text-xs text-base-content/50">Avg duration</div>
                   </div>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p class="text-xs text-base-content/50 mt-2">
                   <%= if @execution_stats.last_run do %>
                     Last run: <span class="font-medium"><%= @execution_stats.last_run.status %></span>
                     at <%= format_timestamp(@execution_stats.last_run.start_time) %>
@@ -614,11 +614,11 @@ defmodule AirWeb.Pages.DagEditor do
 
             <div data-tab-panel="source" class="hidden px-6 py-4 flex-1 min-h-0 flex flex-col">
               <div class="flex items-center justify-between mb-1 flex-shrink-0">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source Code</label>
+                <label class="block text-sm font-medium text-base-content/70">Source Code</label>
                 <select
                   name="dag[source_language]"
                   data-code-editor-language-select
-                  class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 text-xs"
+                  class="px-2 py-1 bg-field border border-base-300 rounded text-field-content/70 text-xs"
                 >
                   <option value="python" selected={@dag.source_language in [nil, "python"]}>Python</option>
                   <option value="shell" selected={@dag.source_language == "shell"}>Shell</option>
@@ -632,23 +632,23 @@ defmodule AirWeb.Pages.DagEditor do
                 phx-update="ignore"
                 data-source-code={@dag.source_code || ""}
                 data-source-language={@dag.source_language || "python"}
-                class="border border-gray-300 dark:border-gray-600 rounded overflow-hidden flex-1 min-h-0"
+                class="border border-base-300 rounded overflow-hidden flex-1 min-h-0"
               >
                 <textarea name="dag[source_code]" class="hidden"><%= @dag.source_code || "" %></textarea>
               </div>
             </div>
 
-            <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-base-300 flex-shrink-0">
               <button
                 type="button"
                 phx-click={close_properties_drawer()}
-                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors"
+                class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors"
               >
                 Save Properties
               </button>
@@ -674,14 +674,14 @@ defmodule AirWeb.Pages.DagEditor do
   defp chip_list_input(assigns) do
     ~H"""
     <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{@label}</label>
+      <label class="block text-sm font-medium text-base-content/70 mb-1">{@label}</label>
       <div
         id={"#{@field.id}-chips"}
         phx-hook="ChipListHook"
         phx-update="ignore"
         data-field-name={@field.name <> "[]"}
         data-values={Jason.encode!(@field.value || [])}
-        class="flex flex-wrap gap-1.5 px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded min-h-[2.25rem]"
+        class="flex flex-wrap gap-1.5 px-2 py-1.5 bg-field border border-base-300 rounded min-h-[2.25rem]"
       >
       </div>
     </div>

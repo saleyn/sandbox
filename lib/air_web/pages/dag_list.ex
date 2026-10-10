@@ -155,7 +155,7 @@ defmodule AirWeb.Pages.DagList do
         </script>
 
         <div class="max-w-6xl mx-auto p-8">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">DAGs</h1>
+          <h1 class="text-3xl font-bold text-base-content mb-6">DAGs</h1>
 
         <!-- Toolbar: search + actions -->
         <div class="flex flex-wrap items-center gap-3 mb-6">
@@ -166,14 +166,14 @@ defmodule AirWeb.Pages.DagList do
               value={@search}
               placeholder="Search by ID, title, description, owner, or label…"
               phx-debounce="200"
-              class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+              class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm focus:outline-none focus:border-focus"
             />
           </form>
 
           <button
             type="button"
             phx-click="open_paste_form"
-            class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors flex items-center gap-1.5"
+            class="px-3 py-1.5 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors flex items-center gap-1.5"
           >
             <.icon name="hero-clipboard-document" class="size-4" /> Paste DAG
           </button>
@@ -181,38 +181,38 @@ defmodule AirWeb.Pages.DagList do
           <button
             type="button"
             phx-click="open_create_form"
-            class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors flex items-center gap-1.5"
+            class="px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors flex items-center gap-1.5"
           >
             <.icon name="hero-plus" class="size-4" /> New DAG
           </button>
         </div>
 
         <!-- Create form (inline, not a full drawer — single field) -->
-        <div :if={@show_create_form} class="mb-6 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div :if={@show_create_form} class="mb-6 p-4 bg-base-100 border border-base-300 rounded-lg">
           <form phx-submit="create_dag" phx-change="validate_new_dag_id" class="flex items-start gap-3">
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New DAG ID</label>
+              <label class="block text-sm font-medium text-base-content/70 mb-1">New DAG ID</label>
               <input
                 type="text"
                 name="dag_id"
                 value={@new_dag_id}
                 placeholder="my_new_pipeline"
                 autofocus
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm font-mono focus:outline-none focus:border-focus"
               />
-              <p :if={@create_error} class="mt-1 text-sm text-red-600 dark:text-red-400">{@create_error}</p>
+              <p :if={@create_error} class="mt-1 text-sm text-error">{@create_error}</p>
             </div>
             <div class="flex gap-2 pt-6">
               <button
                 type="button"
                 phx-click="close_create_form"
-                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors"
+                class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors"
               >
                 Create & Open Editor
               </button>
@@ -221,41 +221,41 @@ defmodule AirWeb.Pages.DagList do
         </div>
 
         <!-- Paste form -->
-        <div :if={@show_paste_form} class="mb-6 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div :if={@show_paste_form} class="mb-6 p-4 bg-base-100 border border-base-300 rounded-lg">
           <form phx-submit="paste_dag" class="space-y-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New DAG ID</label>
+              <label class="block text-sm font-medium text-base-content/70 mb-1">New DAG ID</label>
               <input
                 type="text"
                 name="dag_id"
                 value={@paste_new_id}
                 placeholder="copied_pipeline"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm font-mono focus:outline-none focus:border-focus"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-sm font-medium text-base-content/70 mb-1">
                 Pasted DAG JSON (from a "Copy" action)
               </label>
               <textarea
                 name="json"
                 rows="8"
                 placeholder="Paste JSON here (Ctrl+V / Cmd+V)…"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content text-sm font-mono focus:outline-none focus:border-focus"
               >{@paste_json}</textarea>
-              <p :if={@paste_error} class="mt-1 text-sm text-red-600 dark:text-red-400">{@paste_error}</p>
+              <p :if={@paste_error} class="mt-1 text-sm text-error">{@paste_error}</p>
             </div>
             <div class="flex justify-end gap-2">
               <button
                 type="button"
                 phx-click="close_paste_form"
-                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content text-sm rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition-colors"
+                class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content text-sm font-semibold rounded transition-colors"
               >
                 Create from JSON
               </button>
@@ -272,21 +272,21 @@ defmodule AirWeb.Pages.DagList do
         </div>
 
         <!-- DAG table -->
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="bg-base-100 border border-base-300 rounded-lg overflow-hidden">
           <table class="w-full text-sm">
-            <thead class="bg-gray-100 dark:bg-gray-900 text-left">
+            <thead class="bg-base-200 border-b border-base-300 text-left">
               <tr>
-                <th class="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">ID</th>
-                <th class="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">Title</th>
-                <th class="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">Owner</th>
-                <th class="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">Labels</th>
-                <th class="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">Updated</th>
+                <th class="px-4 py-2 font-semibold text-base-content/70">ID</th>
+                <th class="px-4 py-2 font-semibold text-base-content/70">Title</th>
+                <th class="px-4 py-2 font-semibold text-base-content/70">Owner</th>
+                <th class="px-4 py-2 font-semibold text-base-content/70">Labels</th>
+                <th class="px-4 py-2 font-semibold text-base-content/70">Updated</th>
                 <th class="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody>
               <tr :if={@dags == []}>
-                <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="6" class="px-4 py-8 text-center text-base-content/50">
                   <%= if @search != "" do %>
                     No DAGs match "<span class="font-mono">{@search}</span>".
                   <% else %>
@@ -296,43 +296,43 @@ defmodule AirWeb.Pages.DagList do
               </tr>
               <tr
                 :for={dag <- @dags}
-                class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                class="border-t border-base-300 hover:bg-base-content/5"
               >
                 <td class="px-4 py-2">
-                  <.link navigate={~p"/dag/editor/#{dag.dag_id}"} class="font-mono text-blue-600 dark:text-blue-400 hover:underline">
+                  <.link navigate={~p"/dag/editor/#{dag.dag_id}"} class="font-mono text-primary hover:underline">
                     {dag.dag_id}
                   </.link>
                 </td>
-                <td class="px-4 py-2 text-gray-900 dark:text-white">{dag.title}</td>
-                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{dag.owner || "—"}</td>
+                <td class="px-4 py-2 text-base-content">{dag.title}</td>
+                <td class="px-4 py-2 text-base-content/50">{dag.owner || "—"}</td>
                 <td class="px-4 py-2">
                   <div class="flex flex-wrap gap-1">
                     <span
                       :for={label <- dag.labels}
-                      class="inline-block px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs"
+                      class="inline-block px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs"
                     >
                       {label}
                     </span>
                   </div>
                 </td>
-                <td class="px-4 py-2 text-gray-500 dark:text-gray-400 text-xs">
+                <td class="px-4 py-2 text-base-content/50 text-xs">
                   {format_timestamp(dag.updated_at)}
                 </td>
                 <td class="px-4 py-2">
                   <div class="flex items-center justify-end gap-1">
                     <.link
                       navigate={~p"/dag/editor/#{dag.dag_id}"}
-                      title="Edit"
-                      class="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                      aria-label="Edit"
+                      class={["p-1.5 text-base-content/50 hover:text-primary rounded hover:bg-base-200" | tooltip_class(:top_right)]}
                     >
                       <.icon name="hero-pencil-square" class="size-4" />
                     </.link>
                     <button
                       type="button"
-                      title="Copy as JSON"
+                      aria-label="Copy as JSON"
                       phx-click="copy_dag"
                       phx-value-dag_id={dag.dag_id}
-                      class="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                      class={["p-1.5 text-base-content/50 hover:text-primary rounded hover:bg-base-200" | tooltip_class(:top_right)]}
                     >
                       <.icon name="hero-document-duplicate" class="size-4" />
                     </button>
@@ -342,24 +342,24 @@ defmodule AirWeb.Pages.DagList do
                         type="button"
                         phx-click="delete_dag"
                         phx-value-dag_id={dag.dag_id}
-                        class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded"
+                        class="px-2 py-1 bg-error hover:bg-error/90 text-error-content text-xs rounded"
                       >
                         Confirm delete
                       </button>
                       <button
                         type="button"
                         phx-click="cancel_delete"
-                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded"
+                        class="px-2 py-1 bg-base-200 hover:bg-base-300 text-base-content text-xs rounded"
                       >
                         Cancel
                       </button>
                     <% else %>
                       <button
                         type="button"
-                        title="Delete"
+                        aria-label="Delete"
                         phx-click="confirm_delete"
                         phx-value-dag_id={dag.dag_id}
-                        class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        class={["p-1.5 text-base-content/50 hover:text-error rounded hover:bg-base-200" | tooltip_class(:top_right)]}
                       >
                         <.icon name="hero-trash" class="size-4" />
                       </button>

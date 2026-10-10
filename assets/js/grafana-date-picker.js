@@ -158,17 +158,17 @@ class GrafanaDatePicker {
         <!-- Trigger: a readonly input so clicking/tabbing into it shows the
              normal input focus ring and text cursor, but typing has no
              effect — all editing happens via the dropdown below. -->
-        <div class="gdp-trigger relative flex items-stretch w-full border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer overflow-hidden">
+        <div class="gdp-trigger relative flex items-stretch w-full border border-base-300 rounded-lg bg-field text-field-content cursor-pointer overflow-hidden">
           <!-- Clock icon gets its own shaded segment + right border, like
                an input-group prefix, instead of floating directly on the
                same background as the text. -->
-          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
-            ${ICONS.clock('w-4 h-4 text-gray-500 dark:text-gray-400')}
+          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-base-200 border-r border-base-300 shrink-0">
+            ${ICONS.clock('w-4 h-4 text-base-content/50')}
           </span>
           <input
             type="text"
             readonly
-            class="gdp-display flex-1 min-w-0 ${TRIGGER_DISPLAY_PAD} bg-transparent border-none outline-none cursor-pointer text-gray-900 dark:text-white placeholder-gray-400"
+            class="gdp-display flex-1 min-w-0 ${TRIGGER_DISPLAY_PAD} bg-transparent border-none outline-none cursor-pointer text-field-content placeholder:text-field-content/40"
             value="Select date range"
           />
           <!-- Shaded segment + left border mirrors the clock prefix on the
@@ -178,7 +178,7 @@ class GrafanaDatePicker {
                rotation lives on the INNER span, not this one — rotating a
                box that itself has a one-sided border would visually flip
                the border to the opposite edge when open. -->
-          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-gray-100 dark:bg-gray-800 border-l border-gray-300 dark:border-gray-600 shrink-0">
+          <span class="flex items-center justify-center ${TRIGGER_ICON_PAD} bg-base-200 border-l border-base-300 shrink-0">
             <span class="gdp-chevron inline-flex items-center justify-center transition-transform duration-150">
               ${ICONS.chevronDown('w-4 h-4')}
             </span>
@@ -186,7 +186,7 @@ class GrafanaDatePicker {
         </div>
 
         <!-- Picker Panel -->
-        <div class="gdp-panel absolute top-full mt-1 ${sz.panelWidth} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 hidden flex flex-col">
+        <div class="gdp-panel absolute top-full mt-1 ${sz.panelWidth} bg-base-100 border border-base-300 rounded-lg shadow-xl z-50 hidden flex flex-col">
           <!-- Main Content: Two equal-width columns. overflow-hidden here is
                load-bearing: max-h-96 alone only stops the box from growing,
                it does NOT clip children — without this, a long Recently
@@ -203,19 +203,19 @@ class GrafanaDatePicker {
                  own content (inputs + buttons + recently-used) is ever
                  taller than the row allows, IT scrolls internally rather
                  than pushing/overflowing past the row boundary above. -->
-            <div class="${sz.leftColWidth} shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 ${sz.leftColPad} ${sz.leftColGap} overflow-y-auto">
+            <div class="${sz.leftColWidth} shrink-0 flex flex-col border-r border-base-300 ${sz.leftColPad} ${sz.leftColGap} overflow-y-auto">
               <div class="relative">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">From</label>
+                <label class="block text-xs font-medium text-base-content/50 uppercase mb-1">From</label>
                 <div class="relative">
                   <input
                     type="text"
-                    class="gdp-from-input w-full ${sz.inputPad} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    class="gdp-from-input w-full ${sz.inputPad} bg-field border border-base-300 rounded text-field-content text-sm placeholder:text-field-content/40 focus:outline-none focus:border-focus"
                     placeholder="Last 7d"
                     value="${this.fromValue}"
                   />
                   <button
                     type="button"
-                    class="gdp-calendar-toggle-from absolute inset-y-0 right-0 flex items-center justify-center ${sz.calendarBtnWidth} text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                    class="gdp-calendar-toggle-from absolute inset-y-0 right-0 flex items-center justify-center ${sz.calendarBtnWidth} text-base-content/50 hover:text-base-content transition-colors"
                     title="Pick a date from the calendar"
                   >
                     ${ICONS.calendarDays('w-4 h-4')}
@@ -231,17 +231,17 @@ class GrafanaDatePicker {
               </div>
 
               <div class="relative">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">To</label>
+                <label class="block text-xs font-medium text-base-content/50 uppercase mb-1">To</label>
                 <div class="relative">
                   <input
                     type="text"
-                    class="gdp-to-input w-full ${sz.inputPad} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    class="gdp-to-input w-full ${sz.inputPad} bg-field border border-base-300 rounded text-field-content text-sm placeholder:text-field-content/40 focus:outline-none focus:border-focus"
                     placeholder="now"
                     value="${this.toValue}"
                   />
                   <button
                     type="button"
-                    class="gdp-calendar-toggle-to absolute inset-y-0 right-0 flex items-center justify-center ${sz.calendarBtnWidth} text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                    class="gdp-calendar-toggle-to absolute inset-y-0 right-0 flex items-center justify-center ${sz.calendarBtnWidth} text-base-content/50 hover:text-base-content transition-colors"
                     title="Pick a date from the calendar"
                   >
                     ${ICONS.calendarDays('w-4 h-4')}
@@ -257,21 +257,21 @@ class GrafanaDatePicker {
               <div class="flex gap-2 pt-2">
                 <button
                   type="button"
-                  class="gdp-copy shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
+                  class="gdp-copy shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-base-200 hover:bg-base-300 text-base-content rounded transition-colors"
                   title="Copy to clipboard"
                 >
                   ${ICONS.clipboard('w-4 h-4')}
                 </button>
                 <button
                   type="button"
-                  class="gdp-paste shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
+                  class="gdp-paste shrink-0 ${sz.squareBtnSize} flex items-center justify-center bg-base-200 hover:bg-base-300 text-base-content rounded transition-colors"
                   title="Paste from clipboard"
                 >
                   ${ICONS.clipboardDocument('w-4 h-4')}
                 </button>
                 <button
                   type="button"
-                  class="gdp-apply flex-1 ${sz.applyBtnPad} bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition-colors text-sm"
+                  class="gdp-apply flex-1 ${sz.applyBtnPad} bg-primary hover:bg-primary/90 text-primary-content font-semibold rounded transition-colors text-sm"
                 >
                   Apply range
                 </button>
@@ -279,14 +279,14 @@ class GrafanaDatePicker {
 
               <!-- Shown only when To resolves to an earlier instant than
                    From; cleared again on the next successful Apply. -->
-              <p class="gdp-range-error hidden text-xs text-red-600 dark:text-red-400">"FROM" date must be less than "TO" date</p>
+              <p class="gdp-range-error hidden text-xs text-error">"FROM" date must be less than "TO" date</p>
 
               <!-- Recently used ranges: flex-1 + min-h-0 lets this section
                    claim remaining space in the column and scroll
                    internally (own max-h as a soft cap), while the overall
                    column overflow-y-auto above is the hard backstop. -->
-              <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex-1 min-h-0 flex flex-col">
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1 shrink-0">Recently used absolute ranges</p>
+              <div class="pt-2 border-t border-base-300 flex-1 min-h-0 flex flex-col">
+                <p class="text-xs font-medium text-base-content/50 uppercase mb-1 shrink-0">Recently used absolute ranges</p>
                 <div class="gdp-recently-used space-y-2 overflow-y-auto">
                   ${this.renderRecentlyUsed()}
                 </div>
@@ -313,10 +313,10 @@ class GrafanaDatePicker {
             <div class="flex-1 min-w-0 flex flex-col">
               <!-- shrink-0: fixed header, never part of the
                    scrollable area below. -->
-              <div class="${sz.searchWrapPad} border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <div class="${sz.searchWrapPad} border-b border-base-300 shrink-0">
                 <input
                   type="text"
-                  class="gdp-search-input w-full ${sz.searchInputPad} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  class="gdp-search-input w-full ${sz.searchInputPad} bg-field border border-base-300 rounded text-field-content text-sm placeholder:text-field-content/40 focus:outline-none focus:border-focus"
                   placeholder="Search ranges"
                 />
               </div>
@@ -329,20 +329,16 @@ class GrafanaDatePicker {
             </div>
           </div>
 
-          <!-- Bottom Panel: Browser Time and Timezone. "gray-750" isn't a
-               real Tailwind shade (the scale has no 750 step), so
-               dark:bg-gray-750 silently generated no CSS at all — this
-               bar stayed stuck on the light-mode bg-gray-50 regardless of
-               theme. bg-gray-800 matches the dropdown panel's own
-               dark-mode background (see the gdp-panel div above). -->
-          <div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 ${sz.bottomPad} bg-gray-50 dark:bg-gray-800">
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              Browser Time: <span class="gdp-browser-time font-medium text-gray-700 dark:text-gray-300">EDT</span>
+          <!-- Bottom Panel: Browser Time and Timezone. Matches the dropdown
+               panel's own background (see the gdp-panel div above). -->
+          <div class="flex items-center justify-between border-t border-base-300 ${sz.bottomPad} bg-base-100">
+            <div class="text-sm text-base-content/50">
+              Browser Time: <span class="gdp-browser-time font-medium text-base-content">EDT</span>
             </div>
             <div class="relative">
               <button
                 type="button"
-                class="gdp-timezone-btn flex items-center gap-2 ${sz.tzBtnPad} text-sm bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white rounded transition-colors"
+                class="gdp-timezone-btn flex items-center gap-2 ${sz.tzBtnPad} text-sm bg-base-200 hover:bg-base-300 text-base-content rounded transition-colors"
               >
                 <span class="gdp-timezone-display">UTC-04:00</span>
                 <span class="gdp-timezone-chevron inline-flex items-center justify-center transition-transform duration-150">
@@ -351,11 +347,11 @@ class GrafanaDatePicker {
               </button>
 
               <!-- Timezone Dropdown (hidden by default) -->
-              <div class="gdp-timezone-panel hidden absolute bottom-full mb-2 right-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50">
-                <div class="${sz.tzPanelPad} border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <div class="gdp-timezone-panel hidden absolute bottom-full mb-2 right-0 w-48 bg-base-100 border border-base-300 rounded-lg shadow-xl z-50">
+                <div class="${sz.tzPanelPad} border-b border-base-300 flex items-center gap-2">
                   <input
                     type="text"
-                    class="gdp-timezone-search flex-1 min-w-0 ${sz.searchInputPad} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    class="gdp-timezone-search flex-1 min-w-0 ${sz.searchInputPad} bg-field border border-base-300 rounded text-field-content text-sm placeholder:text-field-content/40 focus:outline-none focus:border-focus"
                     placeholder="Search timezones"
                   />
                   <!-- Closes the dropdown without committing the staged
@@ -364,7 +360,7 @@ class GrafanaDatePicker {
                        panel. -->
                   <button
                     type="button"
-                    class="gdp-timezone-close shrink-0 p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                    class="gdp-timezone-close shrink-0 p-1 text-base-content/50 hover:text-base-content transition-colors"
                     title="Close"
                   >
                     ${ICONS.xMark('w-4 h-4')}
@@ -373,17 +369,17 @@ class GrafanaDatePicker {
                 <div class="gdp-timezone-list max-h-48 overflow-y-auto ${sz.tzPanelPad}">
                   ${this.renderTimezones()}
                 </div>
-                <div class="flex gap-2 ${sz.tzPanelPad} border-t border-gray-200 dark:border-gray-700">
+                <div class="flex gap-2 ${sz.tzPanelPad} border-t border-base-300">
                   <button
                     type="button"
-                    class="gdp-timezone-reset flex-1 ${sz.tzActionBtnPad} bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white text-xs font-medium rounded transition-colors"
+                    class="gdp-timezone-reset flex-1 ${sz.tzActionBtnPad} bg-base-200 hover:bg-base-300 text-base-content text-xs font-medium rounded transition-colors"
                     title="Reset to browser timezone"
                   >
                     Reset
                   </button>
                   <button
                     type="button"
-                    class="gdp-timezone-accept flex-1 ${sz.tzActionBtnPad} bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                    class="gdp-timezone-accept flex-1 ${sz.tzActionBtnPad} bg-primary hover:bg-primary/90 text-primary-content text-xs font-medium rounded transition-colors"
                   >
                     Accept
                   </button>
@@ -452,7 +448,7 @@ class GrafanaDatePicker {
       // of leaving an orphaned "Common"/"By day" label with nothing
       // underneath it.
       html += `<div class="gdp-quick-group mb-2">
-        <div class="gdp-quick-group-label text-xs font-medium text-gray-500 uppercase tracking-wider ${this.sz.quickGroupPad}">
+        <div class="gdp-quick-group-label text-xs font-medium text-base-content/50 uppercase tracking-wider ${this.sz.quickGroupPad}">
           ${group.label}
         </div>`;
 
@@ -469,7 +465,7 @@ class GrafanaDatePicker {
           // applied, this is only about the picklist's own row.
           html += `<button
             type="button"
-            class="gdp-quick-option w-full ${this.sz.quickOptPad} text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
+            class="gdp-quick-option w-full ${this.sz.quickOptPad} text-left text-sm text-base-content hover:bg-base-200 rounded transition-colors"
             data-from="${opt.from}"
             data-to="${opt.to}"
             data-label="${opt.label}"
@@ -483,7 +479,7 @@ class GrafanaDatePicker {
     // Shown when a search query matches nothing at all; toggled in
     // attachEventListeners' search handler, not here, since this method
     // only runs once at render time.
-    html += '<p class="gdp-quick-no-results hidden text-xs text-gray-400 dark:text-gray-500 text-center py-4">No matches</p>';
+    html += '<p class="gdp-quick-no-results hidden text-xs text-base-content/40 text-center py-4">No matches</p>';
     return html;
   }
 
@@ -499,7 +495,7 @@ class GrafanaDatePicker {
     return timezones.map(tz => `
       <button
         type="button"
-        class="gdp-tz-option w-full ${this.sz.tzOptionPad} text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
+        class="gdp-tz-option w-full ${this.sz.tzOptionPad} text-left text-sm text-base-content hover:bg-base-200 rounded transition-colors"
         data-tz="${tz}"
       >
         ${tz}
@@ -920,8 +916,7 @@ class GrafanaDatePicker {
   // list reflects the in-progress (not-yet-accepted) selection.
   highlightTimezoneOption(tz) {
     this.element.querySelectorAll('.gdp-tz-option').forEach(opt => {
-      opt.classList.toggle('bg-gray-200', opt.dataset.tz === tz);
-      opt.classList.toggle('dark:bg-gray-700', opt.dataset.tz === tz);
+      opt.classList.toggle('bg-base-200', opt.dataset.tz === tz);
     });
   }
 
@@ -1041,13 +1036,13 @@ class GrafanaDatePicker {
 
   renderRecentlyUsed() {
     if (!this.recentlyUsed || this.recentlyUsed.length === 0) {
-      return '<p class="text-xs text-gray-400 dark:text-gray-500">None yet</p>';
+      return '<p class="text-xs text-base-content/40">None yet</p>';
     }
 
     return this.recentlyUsed.map(r => `
       <button
         type="button"
-        class="gdp-recent-option w-full ${this.sz.recentOptPad} my-0 text-left text-[10px] leading-tight text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors whitespace-nowrap overflow-hidden text-ellipsis"
+        class="gdp-recent-option w-full ${this.sz.recentOptPad} my-0 text-left text-[10px] leading-tight text-base-content hover:bg-base-200 rounded transition-colors whitespace-nowrap overflow-hidden text-ellipsis"
         data-from="${r.from}"
         data-to="${r.to}"
         data-label="${r.label || ''}"
@@ -1352,7 +1347,7 @@ class GrafanaDatePicker {
 
       popup.querySelector('.gdp-cal-set')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const selectedDay = popup.querySelector('.gdp-cal-day.bg-blue-600')?.dataset.date
+        const selectedDay = popup.querySelector('.gdp-cal-day.bg-primary')?.dataset.date
           || this.formatDateOnly(new Date());
         commit(selectedDay);
       });
@@ -1429,35 +1424,35 @@ class GrafanaDatePicker {
       days += `<button
         type="button"
         class="gdp-cal-day w-7 h-7 text-xs rounded flex items-center justify-center transition-colors
-          ${inMonth ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}
-          ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
-          ${isToday && !isSelected ? 'ring-1 ring-blue-500' : ''}"
+          ${inMonth ? 'text-base-content' : 'text-base-content/30'}
+          ${isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-200'}
+          ${isToday && !isSelected ? 'ring-1 ring-primary' : ''}"
         data-date="${key}"
       >${d.getDate()}</button>`;
     }
 
     return `
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 w-75">
+      <div class="bg-base-100 border border-base-300 rounded-lg shadow-xl p-3 w-75">
         <div class="flex items-center justify-between mb-2">
-          <button type="button" class="gdp-cal-prev p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300">${ICONS.chevronDown('w-4 h-4 rotate-90')}</button>
-          <span class="text-sm text-gray-800 dark:text-gray-200 font-medium">${monthLabel}</span>
-          <button type="button" class="gdp-cal-next p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300">${ICONS.chevronDown('w-4 h-4 -rotate-90')}</button>
+          <button type="button" class="gdp-cal-prev p-1 hover:bg-base-200 rounded text-base-content">${ICONS.chevronDown('w-4 h-4 rotate-90')}</button>
+          <span class="text-sm text-base-content font-medium">${monthLabel}</span>
+          <button type="button" class="gdp-cal-next p-1 hover:bg-base-200 rounded text-base-content">${ICONS.chevronDown('w-4 h-4 -rotate-90')}</button>
         </div>
         <div class="grid grid-cols-7 gap-0.5 mb-1">
-          ${WEEKDAY_LABELS.map(w => `<div class="text-[10px] text-gray-400 dark:text-gray-500 text-center">${w}</div>`).join('')}
+          ${WEEKDAY_LABELS.map(w => `<div class="text-[10px] text-base-content/40 text-center">${w}</div>`).join('')}
         </div>
         <div class="grid grid-cols-7 gap-0.5 mb-3">
           ${days}
         </div>
-        <div class="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Time</label>
+        <div class="flex items-center gap-2 pt-2 border-t border-base-300">
+          <label class="text-xs text-base-content/50 shrink-0">Time</label>
           <input
             type="time"
             step="1"
-            class="gdp-cal-time flex-1 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs focus:outline-none focus:border-blue-500"
+            class="gdp-cal-time flex-1 px-2 py-1 bg-field border border-base-300 rounded text-field-content text-xs focus:outline-none focus:border-focus"
             value="${timeValue}"
           />
-          <button type="button" class="gdp-cal-set px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">Set</button>
+          <button type="button" class="gdp-cal-set px-2 py-1 bg-primary hover:bg-primary/90 text-primary-content text-xs font-medium rounded transition-colors">Set</button>
         </div>
       </div>
     `;

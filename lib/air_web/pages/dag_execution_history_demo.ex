@@ -281,9 +281,9 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
              themselves. -->
         <div class="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">DAG Execution History</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400">
-              Task execution status visualization for <span class="font-mono text-blue-600 dark:text-blue-400"><%= @dag_id %></span>
+            <h1 class="text-4xl font-bold text-base-content mb-2">DAG Execution History</h1>
+            <p class="text-lg text-base-content/50">
+              Task execution status visualization for <span class="font-mono text-primary"><%= @dag_id %></span>
             </p>
           </div>
           <!-- flex-wrap + w-full below md: the date picker and button
@@ -315,9 +315,9 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
               class={[
                 "px-4 py-2 font-semibold rounded-lg transition-colors whitespace-nowrap",
                 @in_flight_run_id
-                && "bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400 cursor-not-allowed",
+                && "bg-base-300 text-base-content/50 cursor-not-allowed",
                 !@in_flight_run_id
-                && "bg-blue-600 hover:bg-blue-700 text-white"
+                && "bg-primary hover:bg-primary/90 text-primary-content"
               ]}
             >
               <%= if @in_flight_run_id, do: "⏳ Running...", else: "🚀 Trigger Execution" %>
@@ -327,20 +327,20 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400 text-sm uppercase">Total Runs</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2"><%= @stats.total_runs %></p>
+          <div class="bg-base-100 p-4 rounded-lg border border-base-300">
+            <p class="text-base-content/50 text-sm uppercase">Total Runs</p>
+            <p class="text-3xl font-bold text-base-content mt-2"><%= @stats.total_runs %></p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400 text-sm uppercase">Successful</p>
+          <div class="bg-base-100 p-4 rounded-lg border border-base-300">
+            <p class="text-base-content/50 text-sm uppercase">Successful</p>
             <p class="text-3xl font-bold text-green-600 dark:text-green-500 mt-2"><%= @stats.successful_runs %></p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400 text-sm uppercase">Failed</p>
+          <div class="bg-base-100 p-4 rounded-lg border border-base-300">
+            <p class="text-base-content/50 text-sm uppercase">Failed</p>
             <p class="text-3xl font-bold text-red-600 dark:text-red-500 mt-2"><%= @stats.failed_runs %></p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500 dark:text-gray-400 text-sm uppercase">Success Rate</p>
+          <div class="bg-base-100 p-4 rounded-lg border border-base-300">
+            <p class="text-base-content/50 text-sm uppercase">Success Rate</p>
             <p class="text-3xl font-bold text-blue-600 dark:text-blue-500 mt-2"><%= @stats.success_rate %>%</p>
           </div>
         </div>
@@ -361,15 +361,15 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
         <!-- Task Color Intensity Mode -->
         <div class="mb-4 flex items-center gap-3">
-          <span class="text-gray-600 dark:text-gray-400 text-sm uppercase">Task color intensity</span>
-          <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
+          <span class="text-base-content/50 text-sm uppercase">Task color intensity</span>
+          <div class="inline-flex rounded-lg border border-base-300 overflow-hidden">
             <button
               phx-click="set_task_color_mode"
               phx-value-mode="fixed"
               class={[
                 "px-3 py-1.5 text-sm font-medium transition-colors",
-                @task_color_mode == :fixed && "bg-blue-600 text-white",
-                @task_color_mode != :fixed && "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                @task_color_mode == :fixed && "bg-primary text-primary-content",
+                @task_color_mode != :fixed && "bg-base-200 text-base-content/70 hover:bg-base-300"
               ]}
             >
               Fixed
@@ -379,8 +379,8 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
               phx-value-mode="duration"
               class={[
                 "px-3 py-1.5 text-sm font-medium transition-colors",
-                @task_color_mode == :duration && "bg-blue-600 text-white",
-                @task_color_mode != :duration && "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                @task_color_mode == :duration && "bg-primary text-primary-content",
+                @task_color_mode != :duration && "bg-base-200 text-base-content/70 hover:bg-base-300"
               ]}
             >
               Proportional
@@ -402,15 +402,15 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
         <!-- Selected Task Details -->
         <%= if @selected_task do %>
-          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-8">
+          <div class="bg-base-100 border border-base-300 rounded-lg p-6 mb-8">
             <div class="flex justify-between items-start mb-4">
               <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white"><%= @selected_task.task_id %></h3>
-                <p class="text-gray-600 dark:text-gray-400 text-sm">Run: <span class="font-mono"><%= @selected_task.run_id %></span></p>
+                <h3 class="text-xl font-bold text-base-content"><%= @selected_task.task_id %></h3>
+                <p class="text-base-content/50 text-sm">Run: <span class="font-mono"><%= @selected_task.run_id %></span></p>
               </div>
               <button
                 phx-click={JS.push("clear_selection")}
-                class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
+                class="text-base-content/50 hover:text-base-content transition"
               >
                 ✕
               </button>
@@ -418,26 +418,26 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p class="text-gray-500 dark:text-gray-500 text-xs uppercase">Status</p>
-                <p class="text-gray-900 dark:text-white font-semibold mt-1 capitalize">
+                <p class="text-base-content/50 text-xs uppercase">Status</p>
+                <p class="text-base-content font-semibold mt-1 capitalize">
                   <span class={status_badge_class(@selected_task.status)}>
                     <%= @selected_task.status %>
                   </span>
                 </p>
               </div>
               <div>
-                <p class="text-gray-500 dark:text-gray-500 text-xs uppercase">Duration</p>
-                <p class="text-gray-900 dark:text-white font-semibold mt-1">
+                <p class="text-base-content/50 text-xs uppercase">Duration</p>
+                <p class="text-base-content font-semibold mt-1">
                   <%= format_duration(@selected_task.duration_ms) %>
                 </p>
               </div>
               <div>
-                <p class="text-gray-500 dark:text-gray-500 text-xs uppercase">Try Number</p>
-                <p class="text-gray-900 dark:text-white font-semibold mt-1"><%= @selected_task.try_number %></p>
+                <p class="text-base-content/50 text-xs uppercase">Try Number</p>
+                <p class="text-base-content font-semibold mt-1"><%= @selected_task.try_number %></p>
               </div>
               <div>
-                <p class="text-gray-500 dark:text-gray-500 text-xs uppercase">Started</p>
-                <p class="text-gray-900 dark:text-white font-semibold mt-1 text-sm">
+                <p class="text-base-content/50 text-xs uppercase">Started</p>
+                <p class="text-base-content font-semibold mt-1 text-sm">
                   <%= format_datetime(@selected_task.start_time) %>
                 </p>
               </div>
@@ -446,36 +446,36 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
         <% end %>
 
         <!-- Legend -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Status Legend</h2>
+        <div class="bg-base-100 p-6 rounded-lg border border-base-300">
+          <h2 class="text-xl font-bold text-base-content mb-4">Status Legend</h2>
           <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-green-500 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Success</span>
+              <span class="text-base-content/70">Success</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-red-600 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Failed</span>
+              <span class="text-base-content/70">Failed</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-blue-500 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Running</span>
+              <span class="text-base-content/70">Running</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-amber-500 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Skipped</span>
+              <span class="text-base-content/70">Skipped</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-yellow-400 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Queued</span>
+              <span class="text-base-content/70">Queued</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-white border border-gray-300 dark:border-gray-600 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Waiting</span>
+              <span class="text-base-content/70">Waiting</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="w-4 h-4 bg-slate-600 rounded"></div>
-              <span class="text-gray-700 dark:text-gray-300">Cancelled</span>
+              <span class="text-base-content/70">Cancelled</span>
             </div>
           </div>
         </div>

@@ -246,7 +246,7 @@ defmodule AirWeb.CoreComponents do
         <select
           id={@id}
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+          class={[@class || field_class(), @errors != [] && (@error_class || "border-error")]}
           multiple={@multiple}
           {@rest}
         >
@@ -268,8 +268,8 @@ defmodule AirWeb.CoreComponents do
           id={@id}
           name={@name}
           class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
+            @class || field_class(),
+            @errors != [] && (@error_class || "border-error")
           ]}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
@@ -291,8 +291,8 @@ defmodule AirWeb.CoreComponents do
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
+            @class || field_class(),
+            @errors != [] && (@error_class || "border-error")
           ]}
           {@rest}
         />
@@ -301,6 +301,26 @@ defmodule AirWeb.CoreComponents do
     </div>
     """
   end
+
+  @doc """
+  Shared Tailwind classes for text inputs/selects/textareas app-wide,
+  matching assets/js/grafana-date-picker.js's own field styling exactly
+  (the one piece of UI whose look predates and inspired this): bg-field
+  (a dedicated color, NOT base-100/200/300 — see --color-field in
+  assets/css/app.css for why: it needs to read as visually distinct from
+  its surrounding panel in dark mode specifically, which no single
+  base-* shade does in both themes at once), a plain 1px base-300 border,
+  `rounded` (not daisyUI's own `input`/`select` component classes' default
+  radius), and a focus state that's a border-color change only — no glow
+  ring — again matching the picker. Exposed publicly (not private) so
+  other hand-rolled form controls outside `<.input>` (e.g.
+  grafana-date-picker.js's own inputs, Settings' theme-name field if it
+  ever stops using <.input>) can reference the exact same string instead
+  of hand-copying it and drifting out of sync.
+  """
+  def field_class,
+    do:
+      "w-full px-3 py-2 rounded border border-base-300 bg-field text-field-content placeholder:text-field-content/40 focus:outline-none focus:border-focus"
 
   # Helper used by inputs to generate form errors
   defp error(assigns) do
@@ -449,6 +469,211 @@ defmodule AirWeb.CoreComponents do
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
+    """
+  end
+
+  @doc """
+  Class list for the app-wide custom hover tooltip on icon-only buttons
+  (see `.hover-tooltip` in app.css for the full mechanism/rationale vs. a
+  native `title`). Pure CSS, no JS: `.hover-tooltip` renders its tooltip
+  text via `content: attr(aria-label)` on a `::after` pseudo-element — so
+  this merges straight into the TRIGGER's own `class` list (the element
+  that already carries `aria-label`), not a separate child element. The
+  tooltip message is written exactly once, as the `aria-label` every one
+  of these buttons already needs for accessibility.
+
+  `direction` picks which corner/edge of the trigger the tooltip hangs off
+  (see the `.hover-tooltip-*` modifier classes in app.css for the exact
+  position each one renders).
+
+  ## Examples
+
+      <button
+        type="button"
+        aria-label="Delete theme"
+        class={["group relative ..." | tooltip_class(:top_right)]}
+      >
+        <.icon name="hero-trash" />
+      </button>
+  """
+  def tooltip_class(direction) when direction in ~w(top bottom bottom_right top_right top_left bottom_left right)a do
+    ["hover-tooltip", "hover-tooltip-#{direction |> to_string() |> String.replace("_", "-")}"]
+  end
+
+  @doc """
+  App-wide confirmation modal, replacing the browser's native
+  `window.confirm()` (used by `data-confirm` on a `phx-click` element, and
+  by any hook that wants a yes/no gate before doing something destructive)
+  with a themed dialog consistent with the rest of the app's chrome.
+
+  Mount exactly ONE of these per page (see `AirWeb.Layouts.sidebar_shell/1`)
+  — it's a single shared dialog, not one per trigger. Two independent ways
+  to use it:
+
+    * Declaratively: add `data-confirm="Some question?"` to any element
+      with a `phx-click` — `.ConfirmDialogHook` (mounted on this component's
+      own root) listens for clicks on `[data-confirm]` anywhere in the
+      document (capture phase, so it runs before LiveView's own click
+      binding on `window`), stops the click from reaching LiveView
+      immediately, shows this dialog with that message, and if confirmed,
+      temporarily strips `data-confirm` before re-dispatching the click
+      (restoring it right after) — `phoenix_html` (imported for
+      data-method links) has its own independent `data-confirm` ->
+      `window.confirm()` listener on `window` that would otherwise fire a
+      SECOND, native confirm on the very click meant to carry the user's
+      "yes" through to LiveView's `phx-click`. Exactly mirrors the
+      ergonomics of the old `data-confirm` + native `confirm()`, just
+      themed and non-blocking.
+
+    * Imperatively from any hook/script: `await window.AppConfirm.ask("Some
+      question?")` resolves `true`/`false` — e.g. dag-editor-hook.js's
+      paste-replace-or-append check, which needs the answer as a value
+      rather than a re-dispatched click.
+  """
+  def confirm_dialog(assigns) do
+    ~H"""
+    <div
+      id="app-confirm-dialog"
+      phx-hook=".ConfirmDialogHook"
+      phx-update="ignore"
+      class="contents"
+    >
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".ConfirmDialogHook">
+        export default {
+          mounted() {
+            this.backdrop = this.el.querySelector("[data-confirm-backdrop]")
+            this.messageEl = this.el.querySelector("[data-confirm-message]")
+            this.confirmBtn = this.el.querySelector("[data-confirm-accept]")
+            this.cancelBtn = this.el.querySelector("[data-confirm-cancel]")
+            this._resolve = null
+
+            // Capture phase + immediately stopping propagation: this has
+            // to run and fully suppress the click BEFORE LiveView's own
+            // document-level click listener (registered on bubble phase)
+            // ever sees it, or phx-click would fire right alongside
+            // showing the dialog instead of waiting for a real answer.
+            document.addEventListener("click", (e) => this.interceptClick(e), true)
+
+            this.confirmBtn.addEventListener("click", () => this.resolveWith(true))
+            this.cancelBtn.addEventListener("click", () => this.resolveWith(false))
+            this.backdrop.addEventListener("click", () => this.resolveWith(false))
+            document.addEventListener("keydown", (e) => {
+              if (e.key === "Escape" && this.isOpen()) this.resolveWith(false)
+            })
+
+            // Exposes ask() to any plain <script>/hook outside LiveView's
+            // own hook system (e.g. dag-editor-hook.js) that needs a
+            // yes/no answer as a value rather than a re-dispatched click.
+            // Only one of this component is ever mounted app-wide (see
+            // its moduledoc), so there's no multi-instance clash to guard
+            // against on teardown.
+            window.AppConfirm = { ask: (message) => this.ask(message) }
+          },
+
+          interceptClick(e) {
+            const trigger = e.target.closest("[data-confirm]")
+            if (!trigger) return
+
+            e.preventDefault()
+            e.stopPropagation()
+            e.stopImmediatePropagation()
+
+            const message = trigger.getAttribute("data-confirm")
+
+            this.ask(message).then((ok) => {
+              if (!ok) return
+              // phoenix_html (imported in app.js for data-method links)
+              // ALSO listens for data-confirm on every click that bubbles
+              // to window, and fires its own native window.confirm() —
+              // independently of this hook, and not stoppable by
+              // e.preventDefault() on this re-dispatched click (that only
+              // suppresses phoenix_html's check on the ORIGINAL click,
+              // not a fresh synthetic one). Removing the attribute before
+              // re-dispatching, then restoring it right after, lets the
+              // click through to LiveView's phx-click binding without
+              // phoenix_html ever seeing a message to confirm — and
+              // leaves the button ready for its next real click.
+              trigger.removeAttribute("data-confirm")
+              trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))
+              trigger.setAttribute("data-confirm", message)
+            })
+          },
+
+          // Promise-based API for non-click callers (e.g. a hook deciding
+          // between two outcomes rather than re-dispatching a click) —
+          // window.AppConfirm.ask("...") resolves true/false exactly like
+          // the old window.confirm(), but never blocks the JS event loop.
+          ask(message) {
+            this.messageEl.textContent = message
+            this.open()
+            return new Promise((resolve) => { this._resolve = resolve })
+          },
+
+          resolveWith(value) {
+            if (!this.isOpen()) return
+            this.close()
+            const resolve = this._resolve
+            this._resolve = null
+            resolve?.(value)
+          },
+
+          isOpen() {
+            return this.el.querySelector("[data-confirm-panel]").dataset.open === "true"
+          },
+
+          open() {
+            const panel = this.el.querySelector("[data-confirm-panel]")
+            panel.dataset.open = "true"
+            this.backdrop.classList.remove("pointer-events-none", "opacity-0")
+            this.backdrop.classList.add("opacity-100")
+            panel.classList.remove("opacity-0", "scale-95", "pointer-events-none")
+            panel.classList.add("opacity-100", "scale-100")
+            this.confirmBtn.focus()
+          },
+
+          close() {
+            const panel = this.el.querySelector("[data-confirm-panel]")
+            panel.dataset.open = "false"
+            this.backdrop.classList.add("pointer-events-none", "opacity-0")
+            this.backdrop.classList.remove("opacity-100")
+            panel.classList.add("opacity-0", "scale-95", "pointer-events-none")
+            panel.classList.remove("opacity-100", "scale-100")
+          }
+        }
+      </script>
+
+      <div
+        data-confirm-backdrop
+        class="fixed inset-0 bg-black/30 z-[60] opacity-0 pointer-events-none transition-opacity duration-150 ease-out"
+      />
+      <div
+        data-confirm-panel
+        data-open="false"
+        role="alertdialog"
+        aria-modal="true"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 opacity-0 scale-95 pointer-events-none transition-[opacity,transform] duration-150 ease-out"
+      >
+        <div class="w-full max-w-sm rounded-lg bg-base-100 border border-base-300 shadow-xl p-5">
+          <p data-confirm-message class="text-sm text-base-content"></p>
+          <div class="flex items-center justify-end gap-2 mt-4">
+            <button
+              type="button"
+              data-confirm-cancel
+              class="px-3 py-1.5 text-sm font-semibold rounded border border-base-300 text-base-content hover:bg-base-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              data-confirm-accept
+              class="px-3 py-1.5 text-sm font-semibold rounded bg-error hover:bg-error/90 text-error-content"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     """
   end
 

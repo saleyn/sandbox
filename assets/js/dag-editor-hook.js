@@ -526,7 +526,7 @@ export const DagEditorHook = {
 
     const hasExisting = this.editor.nodes.size > 0;
     const replace = hasExisting
-      ? window.confirm("Replace the current DAG with the pasted one?\n\nCancel to append instead.")
+      ? await window.AppConfirm.ask("Replace the current DAG with the pasted one? Cancel to append instead.")
       : false;
     this.editor.pasteDocument(doc, replace);
   },

@@ -34,6 +34,48 @@
             document.documentElement.setAttribute("data-theme", systemTheme());
           }
         });
+
+        // Theme Editor preset colors (Settings > Theme Editor tab).
+        // Overrides daisyUI's own [data-theme=light]/[data-theme=dark]
+        // CSS-variable blocks (assets/css/app.css) via a higher-specificity
+        // <style> tag injected here, so applying/switching a preset is
+        // instant and needs no rebuild/reload. Persisted so the choice
+        // survives navigation/reload, same pattern as phx:theme above.
+        const PRESET_STORAGE_KEY = "phx:theme-preset-colors";
+        let presetStyleEl = null;
+
+        const cssVars = (colors) =>
+          Object.entries(colors || {}).map(([k, v]) => `--color-${k}: ${v};`).join(" ");
+
+        const applyPresetColors = (lightColors, darkColors) => {
+          if (!presetStyleEl) {
+            presetStyleEl = document.createElement("style");
+            presetStyleEl.id = "theme-preset-overrides";
+            document.head.appendChild(presetStyleEl);
+          }
+          presetStyleEl.textContent =
+            (lightColors ? `[data-theme="light"] { ${cssVars(lightColors)} }\n` : "") +
+            (darkColors ? `[data-theme="dark"] { ${cssVars(darkColors)} }` : "");
+        };
+
+        const storedPreset = localStorage.getItem(PRESET_STORAGE_KEY);
+        if (storedPreset) {
+          try {
+            const { light, dark } = JSON.parse(storedPreset);
+            applyPresetColors(light, dark);
+          } catch {}
+        }
+
+        window.addEventListener("phx:apply-theme-preset", (e) => {
+          const { light, dark } = e.detail || {};
+          applyPresetColors(light, dark);
+          localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify({ light, dark }));
+        });
+
+        window.addEventListener("phx:clear-theme-preset", () => {
+          localStorage.removeItem(PRESET_STORAGE_KEY);
+          if (presetStyleEl) presetStyleEl.textContent = "";
+        });
       })();
     </script>
   </head>
