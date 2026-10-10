@@ -48,9 +48,12 @@ defmodule Air.DagRunSimulator do
     # Extract IDs of all remaining tasks
     remaining_ids = Enum.map(remaining_tasks, & &1.id)
 
+    IO.inspect(remaining_ids, label: "Remaining task IDs")
+
     # Single bulk update to set all remaining tasks to :skipped with upstream_failed reason
     from(ti in TaskInstance, where: ti.id in ^remaining_ids)
     |> Repo.update_all(set: [status: :skipped, reason: "upstream_failed", updated_at: DateTime.utc_now()])
+    |> IO.inspect(label: "Bulk update result")
 
     # Fetch the updated tasks and notify them
     updated_tasks = Repo.all(from(ti in TaskInstance, where: ti.id in ^remaining_ids))
@@ -122,21 +125,21 @@ defmodule Air.DagRunSimulator do
     duration_ms = DateTime.diff(end_time, run.start_time, :millisecond)
     status = if any_failed?, do: :failed, else: :success
 
-    {:ok, updated_run} =
+    {:ok, _updated_run} =
       run
       |> DagRun.changeset(%{status: status, end_time: end_time, duration_ms: duration_ms})
       |> Repo.update()
 
     # Notify via Postgres
-    payload = Jason.encode!(%{
-      run_id: updated_run.run_id,
-      dag_id: updated_run.dag_id,
-      status: updated_run.status,
-      start_time: updated_run.start_time,
-      end_time: updated_run.end_time,
-      duration_ms: updated_run.duration_ms
-    })
+    # payload = Jason.encode!(%{
+    #   run_id: updated_run.run_id,
+    #   dag_id: updated_run.dag_id,
+    #   status: updated_run.status,
+    #   start_time: updated_run.start_time,
+    #   end_time: updated_run.end_time,
+    #   duration_ms: updated_run.duration_ms
+    # })
 
-    Repo.query!("SELECT pg_notify('dag_run_updated', $1)", [payload])
+    # Repo.query!("SELECT pg_notify('dag_run_updated', $1)", [payload])
   end
 end

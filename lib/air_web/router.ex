@@ -19,8 +19,9 @@ defmodule AirWeb.Router do
 
     get "/", PageController, :home
     live "/demo/dag-execution-history", Pages.DagExecutionHistoryDemo
+    live "/demo/dag-execution-history/:dag_id", Pages.DagExecutionHistoryDemo
     live "/dag/editor", Pages.DagEditor
-    live "/dag/:dag_id/editor", Pages.DagEditor
+    live "/dag/editor/:dag_id", Pages.DagEditor
   end
 
   # Other scopes may use custom stacks.

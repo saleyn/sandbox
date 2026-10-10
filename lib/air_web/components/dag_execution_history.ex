@@ -68,14 +68,13 @@ defmodule AirWeb.Components.DagExecutionHistory do
   def dag_execution_history(assigns) do
     # Get all unique tasks across executions, preserving execution order
     # (order they appear in the first execution, which is their DAG sequence order)
-    all_tasks =
-      assigns.executions
-      |> Enum.flat_map(& &1.tasks)
-      |> Enum.uniq_by(& &1.name)
+    all_tasks = assigns.tasks
+    dag_id    = assigns.dag_id
+    executions = Air.DagExecutionQuery.get_recent_dag_executions(dag_id, 5) || []
 
     # Calculate max duration across all executions for proportional bar sizing
     max_duration_ms =
-      assigns.executions
+      executions
       |> Enum.map(& &1.duration_ms)
       |> Enum.max(fn -> 0 end)
 
@@ -83,7 +82,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
     # (not deduped like all_tasks above, since every instance of a task name across
     # runs can have a different duration), used to normalize :duration color mode.
     max_task_duration_ms =
-      assigns.executions
+      executions
       |> Enum.flat_map(& &1.tasks)
       |> Enum.map(& &1.duration_ms)
       |> Enum.reject(&is_nil/1)
@@ -93,7 +92,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
     # interval) based on how closely spaced the visible runs actually are —
     # a DAG scheduled every few minutes needs minute ticks, one scheduled a
     # few times a day doesn't.
-    tick_granularity = compute_tick_granularity(assigns.executions)
+    tick_granularity = compute_tick_granularity(executions)
 
     # Two-pass tick labeling:
     #
@@ -106,7 +105,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
     # narrow columns overlap and look too busy. A gap of at least 2
     # columns between shown labels keeps the timeline readable.
     {executions_pass1, _} =
-      Enum.map_reduce(assigns.executions, {nil, nil}, fn exec, {prev_date, prev_bucket} ->
+      Enum.map_reduce(executions, {nil, nil}, fn exec, {prev_date, prev_bucket} ->
         date = exec.start_time && DateTime.to_date(exec.start_time)
         bucket = exec.start_time && time_bucket(exec.start_time, tick_granularity)
 
@@ -148,6 +147,7 @@ defmodule AirWeb.Components.DagExecutionHistory do
 
     assigns =
       assigns
+      |> assign(:executions, executions)
       |> assign(:all_tasks, all_tasks)
       |> assign(:max_duration_ms, max_duration_ms)
       |> assign(:max_task_duration_ms, max_task_duration_ms)
@@ -235,20 +235,19 @@ defmodule AirWeb.Components.DagExecutionHistory do
 
           <!-- Task Names: right border lives here (below the header only),
                separating task names from the execution grid. -->
-          <div class="border-r border-gray-300 dark:border-gray-700">
-            <%= for task <- @all_tasks do %>
-              <div
-                class="dag-cell px-6 py-0 h-6 flex items-center border-b border-gray-300 dark:border-gray-700 last:border-b-0 cursor-pointer transition-opacity"
-                data-task-name={task.name}
-              >
-                <p class="text-xs text-gray-600 dark:text-gray-300 truncate max-w-48" title={task.name}>
-                  <%= task.name %>
-                </p>
-              </div>
-            <% end %>
+          <div :for={task_id <- all_tasks |> IO.inspect(label: "all_tasks")} class="border-r border-gray-300 dark:border-gray-700">
+            <div
+              class="dag-cell px-6 py-0 h-6 flex items-center border-b border-gray-300 dark:border-gray-700 last:border-b-0 cursor-pointer transition-opacity"
+              data-task-name={task_id}
+            >
+              <p class="text-xs text-gray-600 dark:text-gray-300 truncate max-w-48" title={task_id}>
+                {task_id}
+              </p>
+            </div>
           </div>
         </div>
 
+        <%= if @executions != [] do %>
         <!-- Scrollable Executions Area: the only element in this component
              with overflow-x-auto, so the horizontal scrollbar it produces
              only ever spans this element's own width — i.e. starts right
@@ -281,6 +280,12 @@ defmodule AirWeb.Components.DagExecutionHistory do
             <% end %>
           </div>
         </div>
+        <% else %>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+          <p class="text-gray-600 dark:text-gray-400 text-lg mb-4">No execution data found for DAG: <%= @dag_id %></p>
+          <p class="text-gray-500 dark:text-gray-500">Run <code class="bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">mix run priv/repo/seeds.exs</code> to populate demo data</p>
+        </div>
+        <% end %>
       </div>
     </div>
     """
@@ -388,14 +393,14 @@ defmodule AirWeb.Components.DagExecutionHistory do
 
       <!-- Task Status Grid -->
       <div class="flex-1 border-r border-gray-200 dark:border-gray-800">
-        <%= for task <- @all_tasks do %>
+        <%= for task_id <- @all_tasks do %>
           <div
             class="dag-cell px-0.5 py-0 h-6 flex items-center justify-center border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-            data-task-name={task.name}
+            data-task-name={task_id}
             data-run-id={@execution.id}
           >
             <.task_status_square
-              task={Map.get(@task_map, task.name)}
+              task={Map.get(@task_map, task_id)}
               run_id={@execution.id}
               on_click={@on_task_click}
               color_mode={@task_color_mode}

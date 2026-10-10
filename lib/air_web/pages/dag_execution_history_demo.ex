@@ -10,24 +10,30 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
   alias AirWeb.Components.DagExecutionHistory
   alias Air.DagExecutionQuery
 
-  @dag_id "example_data_pipeline"
+  @def_dag_id "example_data_pipeline"
+  @show_max_runs 10
 
   @impl true
-  def mount(_params, _session, socket) do
-    executions = DagExecutionQuery.get_recent_dag_executions(@dag_id, 5)
-    stats = DagExecutionQuery.get_dag_stats(@dag_id)
+  def mount(params, _session, socket) do
+    dag_id = params["dag_id"] || @def_dag_id
+    tasks = DagExecutionQuery.get_tasks_for_dag(dag_id) |> IO.inspect(label: "tasks")
+    stats = DagExecutionQuery.get_dag_stats(dag_id)
+    executions = DagExecutionQuery.get_recent_dag_executions(dag_id, @show_max_runs) || []
 
     socket =
       socket
-      |> assign(executions: executions)
+      |> assign(dag_id: dag_id)
+      |> assign(tasks: tasks)
       |> assign(stats: stats)
-      |> assign(dag_id: @dag_id)
+      |> assign(dag_id: dag_id)
       |> assign(selected_task: nil)
       |> assign(task_color_mode: :duration)
       |> assign(in_flight_run_id: nil)
       |> assign(date_from: "")
       |> assign(date_to: "")
       |> assign(date_label: nil)
+      |> assign(tasks: tasks)
+      |> assign(executions: executions)
 
     # Note: Phoenix.PubSub doesn't support wildcard subscriptions.
     # We subscribe to specific run topics inside handle_event("trigger_execution").
@@ -79,7 +85,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
     case parse_date_range(date_from, date_to) do
       {:ok, from_dt, to_dt} ->
-        executions = DagExecutionQuery.get_dag_executions_in_range(@dag_id, from_dt, to_dt)
+        executions = DagExecutionQuery.get_dag_executions_in_range(socket.assigns.dag_id, from_dt, to_dt)
 
         {:noreply,
          socket
@@ -101,6 +107,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
   def handle_event("trigger_execution", _params, socket) do
     import Ecto.Query
+    dag_id = socket.assigns.dag_id
 
     # Don't allow multiple simultaneous triggers
     if socket.assigns.in_flight_run_id do
@@ -110,14 +117,14 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
       run_id = "dag_run_#{System.os_time(:millisecond)}"
 
       # Fetch tasks ordered by task_id to ensure consistent DAG sequence order
-      dag_tasks = Air.Repo.all(from dt in Air.DagTask, where: dt.dag_id == @dag_id, order_by: dt.task_id)
+      dag_tasks = Air.Repo.all(from dt in Air.DagTask, where: dt.dag_id == ^dag_id, order_by: dt.task_id)
 
       # Create the run record with :running status
       {:ok, _run} =
         Air.Repo.insert(
           Air.DagRun.changeset(%Air.DagRun{}, %{
             run_id: run_id,
-            dag_id: @dag_id,
+            dag_id: dag_id,
             status: :running,
             start_time: run_start,
             run_type: "manual"
@@ -130,7 +137,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
           Air.TaskInstance.changeset(%Air.TaskInstance{}, %{
             task_id: task.task_id,
             run_id: run_id,
-            dag_id: @dag_id,
+            dag_id: dag_id,
             status: :waiting,
             hostname: "worker-#{Enum.random(1..3)}"
           })
@@ -145,7 +152,8 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
       # Append the new run to the end of the executions list so it appears
       # as the rightmost (most recent) column — the list is chronological
       # (oldest first, newest last), matching the query's own ordering.
-      updated_executions = socket.assigns.executions ++ [new_execution]
+      updated_executions = [new_execution | (Enum.reverse(socket.assigns.executions) |> Enum.take(@show_max_runs-1))]
+                        |> Enum.reverse()
 
       # Subscribe to database notifications for this run
       Phoenix.PubSub.subscribe(Air.PubSub, "dag_run:#{run_id}")
@@ -250,7 +258,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
       end)
 
     # Refresh stats and clear the in-flight flag
-    stats = DagExecutionQuery.get_dag_stats(@dag_id)
+    stats = DagExecutionQuery.get_dag_stats(socket.assigns.dag_id)
     status_text = run_data["status"]
 
     {:noreply,
@@ -380,19 +388,13 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
 
         <!-- DAG Execution History Component -->
         <div class="mb-8">
-          <%= if @executions != [] do %>
-            <DagExecutionHistory.dag_execution_history
-              executions={@executions}
-              on_task_click="task_clicked"
-              on_run_click="run_clicked"
-              task_color_mode={@task_color_mode}
-            />
-          <% else %>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-              <p class="text-gray-600 dark:text-gray-400 text-lg mb-4">No execution data found for DAG: <%= @dag_id %></p>
-              <p class="text-gray-500 dark:text-gray-500">Run <code class="bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">mix run priv/repo/seeds.exs</code> to populate demo data</p>
-            </div>
-          <% end %>
+          <DagExecutionHistory.dag_execution_history
+            dag_id={@dag_id}
+            tasks={@tasks}
+            on_task_click="task_clicked"
+            on_run_click="run_clicked"
+            task_color_mode={@task_color_mode}
+          />
         </div>
 
         <!-- Selected Task Details -->

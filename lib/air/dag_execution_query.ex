@@ -18,6 +18,24 @@ defmodule Air.DagExecutionQuery do
   - `:limit` - Maximum number of runs to return (default: 10)
   - `:offset` - Number of runs to skip (default: 0)
   """
+  def get_tasks_for_dag(dag_id, opts \\ []) do
+    Air.DagTask
+    |> where(dag_id: ^dag_id)
+    |> order_by(asc: :id)
+    |> select([dt], dt.task_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Fetches execution history for a specific DAG with task instances.
+
+  Returns a list of executions ordered from oldest to newest, with all related task instances.
+
+  ## Options
+
+  - `:limit` - Maximum number of runs to return (default: 10)
+  - `:offset` - Number of runs to skip (default: 0)
+  """
   def get_dag_executions(dag_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
     offset = Keyword.get(opts, :offset, 0)
