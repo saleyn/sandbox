@@ -270,7 +270,8 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="bg-gray-50 dark:bg-gray-900 min-h-screen p-8">
+    <Layouts.sidebar_shell flash={@flash} current_path="/demo/dag-execution-history">
+    <div class="p-8">
       <div class="max-w-full mx-auto">
         <!-- Header. flex-col below md so the title stacks above the
              controls on narrow screens instead of being squeezed beside
@@ -292,11 +293,6 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
                this group from being compressed by the title at desktop
                widths, where there's room for both. -->
           <div class="flex flex-wrap items-center gap-3 w-full md:w-auto md:flex-shrink-0">
-            <!-- Color theme toggle (light/dark/system), same component
-                 used in the default Phoenix app layout — this page
-                 doesn't wrap itself in <Layouts.app>, so it needs its
-                 own copy here to have a toggle at all. -->
-            <Layouts.theme_toggle />
             <!-- Time Range Filter (Grafana-style date picker), next to the
                  trigger button rather than its own section below the
                  header. w-full on narrow screens so it uses the full
@@ -485,6 +481,7 @@ defmodule AirWeb.Pages.DagExecutionHistoryDemo do
         </div>
       </div>
     </div>
+    </Layouts.sidebar_shell>
     """
   end
 

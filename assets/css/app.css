@@ -192,6 +192,22 @@
   pointer-events: none;
 }
 
+/* App shell sidebar (Layouts.sidebar_shell) — collapsed state toggles a
+   single class on #app-sidebar (set/persisted by its own colocated hook);
+   width and label visibility both key off that one class so there's no
+   risk of the two getting out of sync. transition-[width] on the aside
+   itself (set inline in the component) animates the width change; labels
+   fade+collapse via width/opacity so they don't abruptly clip. */
+.app-sidebar-collapsed {
+  width: 4rem !important;
+}
+.app-sidebar-collapsed .app-sidebar-label {
+  display: none;
+}
+.app-sidebar-collapsed .app-sidebar-collapse-icon {
+  transform: rotate(180deg);
+}
+
 /* DagEditor (dag-editor/dag-editor.js) node styling — plain/flat look:
    white rounded-rect task boxes with a thin border, and a diamond for
    condition/branch nodes. Scoped under #dag-canvas-wrapper so it only

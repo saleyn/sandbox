@@ -142,22 +142,20 @@ defmodule AirWeb.Pages.DagList do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="bg-gray-50 dark:bg-gray-900 min-h-screen" id="dag-list" phx-hook=".ClipboardHook">
-      <script :type={Phoenix.LiveView.ColocatedHook} name=".ClipboardHook">
-        export default {
-          mounted() {
-            this.handleEvent("copy_to_clipboard", ({ text }) => {
-              navigator.clipboard.writeText(text).catch((err) => console.error("Clipboard write failed:", err))
-            })
+    <Layouts.sidebar_shell flash={@flash} current_path="/dags">
+      <div id="dag-list" phx-hook=".ClipboardHook">
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".ClipboardHook">
+          export default {
+            mounted() {
+              this.handleEvent("copy_to_clipboard", ({ text }) => {
+                navigator.clipboard.writeText(text).catch((err) => console.error("Clipboard write failed:", err))
+              })
+            }
           }
-        }
-      </script>
+        </script>
 
-      <div class="max-w-6xl mx-auto p-8">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">DAGs</h1>
-          <Layouts.theme_toggle />
-        </div>
+        <div class="max-w-6xl mx-auto p-8">
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">DAGs</h1>
 
         <!-- Toolbar: search + actions -->
         <div class="flex flex-wrap items-center gap-3 mb-6">
@@ -372,8 +370,9 @@ defmodule AirWeb.Pages.DagList do
             </tbody>
           </table>
         </div>
+        </div>
       </div>
-    </div>
+    </Layouts.sidebar_shell>
     """
   end
 

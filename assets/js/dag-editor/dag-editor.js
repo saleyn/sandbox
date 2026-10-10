@@ -58,6 +58,7 @@ export class DagEditor {
     {
       onNodeDoubleClick,
       onSave,
+      onHistoryChange,
       snapToGrid = false,
       showGrid = true,
       gridSize = 20,
@@ -70,6 +71,11 @@ export class DagEditor {
     this.container = container;
     this.onNodeDoubleClick = onNodeDoubleClick;
     this.onSave = onSave;
+    // Called with {canUndo, canRedo} after every undo-stack change (a new
+    // undoable edit, an undo, a redo, or a history clear) — lets the
+    // LiveView hook keep toolbar Undo/Redo buttons' disabled state in
+    // sync without polling.
+    this.onHistoryChange = onHistoryChange;
     this.snapToGrid = snapToGrid;
     this.gridSize = gridSize;
     this.showGrid = showGrid;
@@ -95,9 +101,166 @@ export class DagEditor {
     this._lastAddedNode = null; // for new-node auto-placement
     this._layoutDirection = layoutDirection;
 
+    // ── Undo/redo ──
+    // Snapshot-based, not command-based: every undoable mutation is wrapped
+    // in _withUndoableChange(), which captures a deep-cloned {nodes, edges,
+    // counters} snapshot before running the mutation and pushes it onto
+    // _undoStack only if the graph actually ended up different (so a drag
+    // that never crosses the move threshold, or an align with nothing to
+    // move, doesn't pollute history with a no-op step). Redo stack is
+    // cleared on any new undoable change, same as every standard editor.
+    // Selection/viewport (pan/zoom) are deliberately NOT part of a
+    // snapshot — restoring old selection/viewport on undo would be
+    // surprising and nothing downstream depends on them staying in sync
+    // with graph history.
+    this._undoStack = [];
+    this._redoStack = [];
+    this._undoDepth = 0; // >0 while inside a (possibly nested) undo transaction
+
     this._buildDom();
     this.setGridVisible(this.showGrid);
     this._wireViewportEvents();
+  }
+
+  // ───────────────────────── undo / redo ─────────────────────────
+
+  /** Deep-clones the undoable portion of graph state. Node objects carry a
+   * live `el` DOM reference that must never be cloned/restored directly —
+   * restoring a snapshot always re-renders nodes fresh from their data
+   * instead. */
+  _snapshotState() {
+    const nodes = [...this.nodes.values()].map((n) => {
+      const { el, ...rest } = n;
+      return structuredClone(rest);
+    });
+    const edges = [...this.edges.values()].map((e) => structuredClone(e));
+    return { nodes, edges, nodeCounter: this._nodeCounter, edgeCounter: this._edgeCounter };
+  }
+
+  /** Cheap equality check between two snapshots — used to skip pushing a
+   * no-op undo step (e.g. a click-drag that never passed the move
+   * threshold, or an align call with nothing to move). JSON comparison is
+   * safe here since snapshots only ever contain plain data (no functions,
+   * no DOM nodes — `el` is stripped in _snapshotState). */
+  _snapshotsEqual(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  /** Restores a previously captured snapshot: rebuilds this.nodes/edges
+   * from the cloned data and re-renders everything. Node DOM elements are
+   * recreated from scratch (same as loadFromServer) rather than patched,
+   * since a snapshot has no `el` to reuse and diffing would add
+   * complexity for no real benefit at this editor's scale. */
+  _restoreSnapshot(snapshot) {
+    this.nodesLayer.innerHTML = "";
+    this.nodes.clear();
+    this.edges.clear();
+
+    for (const nodeData of snapshot.nodes) {
+      const node = { ...structuredClone(nodeData), el: null };
+      this.nodes.set(node.id, node);
+      this._renderNode(node);
+    }
+    for (const edgeData of snapshot.edges) {
+      this.edges.set(edgeData.id, structuredClone(edgeData));
+    }
+    this._nodeCounter = snapshot.nodeCounter;
+    this._edgeCounter = snapshot.edgeCounter;
+
+    // Dropped nodes/edges may have been selected; re-apply .is-selected
+    // only to ids that still exist post-restore.
+    this.selectedNodeIds = new Set(
+      [...this.selectedNodeIds].filter((id) => this.nodes.has(id))
+    );
+    for (const node of this.nodes.values()) {
+      if (node.type === "condition") node.orientation = this._conditionOrientation(node);
+      this._applyConditionOrientation(node.el, node.orientation);
+      if (this.selectedNodeIds.has(node.id)) node.el?.classList.add("is-selected");
+    }
+    this.renderEdges();
+  }
+
+  /** Opens an undo transaction — pairs with _endUndoTransaction(). Nested
+   * calls (e.g. deleteSelected() calling removeNode() per id) only
+   * snapshot at the outermost call via _undoDepth, so a multi-node delete
+   * is one undo step, not one per node. Returns the "before" snapshot
+   * (only meaningful at the outermost nesting level; nested calls get
+   * null and ignore it) so a multi-event gesture (mousedown...mouseup) can
+   * hold it open across async event callbacks, which _withUndoableChange's
+   * single-synchronous-function form can't do. */
+  _beginUndoTransaction() {
+    const isOutermost = this._undoDepth === 0;
+    const before = isOutermost ? this._snapshotState() : null;
+    this._undoDepth++;
+    return before;
+  }
+
+  /** Closes an undo transaction opened by _beginUndoTransaction(),
+   * pushing `before` onto the undo stack (and clearing redo) only if the
+   * graph actually changed and this was the outermost call. */
+  _endUndoTransaction(before) {
+    this._undoDepth--;
+    if (this._undoDepth === 0 && before !== null) {
+      const after = this._snapshotState();
+      if (!this._snapshotsEqual(before, after)) {
+        this._undoStack.push(before);
+        this._redoStack = [];
+        this._notifyHistoryChange();
+      }
+    }
+  }
+
+  _notifyHistoryChange() {
+    this.onHistoryChange?.({ canUndo: this.canUndo(), canRedo: this.canRedo() });
+  }
+
+  /** Wraps a single synchronous graph-mutating operation as one undo step
+   * — the common case. Multi-event gestures (drags) use
+   * _beginUndoTransaction/_endUndoTransaction directly instead, since they
+   * span separate mousedown/mousemove/mouseup callbacks rather than one
+   * function call. */
+  _withUndoableChange(fn) {
+    const before = this._beginUndoTransaction();
+    try {
+      return fn();
+    } finally {
+      this._endUndoTransaction(before);
+    }
+  }
+
+  canUndo() {
+    return this._undoStack.length > 0;
+  }
+
+  canRedo() {
+    return this._redoStack.length > 0;
+  }
+
+  undo() {
+    if (!this.canUndo()) return;
+    const current = this._snapshotState();
+    const previous = this._undoStack.pop();
+    this._redoStack.push(current);
+    this._restoreSnapshot(previous);
+    this._notifyHistoryChange();
+  }
+
+  redo() {
+    if (!this.canRedo()) return;
+    const current = this._snapshotState();
+    const next = this._redoStack.pop();
+    this._undoStack.push(current);
+    this._restoreSnapshot(next);
+    this._notifyHistoryChange();
+  }
+
+  /** Discards all undo/redo history — called after a full-document
+   * replace (initial loadFromServer, or paste-with-replace) where there's
+   * no sensible "before" state a user would expect to undo back to. */
+  _clearUndoHistory() {
+    this._undoStack = [];
+    this._redoStack = [];
+    this._notifyHistoryChange();
   }
 
   // ───────────────────────── DOM scaffold ─────────────────────────
@@ -348,25 +511,27 @@ export class DagEditor {
   // ───────────────────────── nodes ─────────────────────────
 
   addNode(type, atPoint = {}, overrides = {}) {
-    this._nodeCounter++;
-    const size = nodeSize(type);
-    const id = overrides.task_id || `new_${type}_${this._nodeCounter}`;
-    const defaultPoint = atPoint.x == null && atPoint.y == null ? this._nextNodePoint(size) : atPoint;
-    const node = {
-      id,
-      type,
-      x: this.snap(defaultPoint.x ?? 200),
-      y: this.snap(defaultPoint.y ?? 200),
-      width: size.width,
-      height: size.height,
-      data: defaultTaskProperties({ task_id: id, task_type: type, ...overrides }),
-      orientation: "horizontal",
-      el: null
-    };
-    this.nodes.set(id, node);
-    this._renderNode(node);
-    this._lastAddedNode = node;
-    return node;
+    return this._withUndoableChange(() => {
+      this._nodeCounter++;
+      const size = nodeSize(type);
+      const id = overrides.task_id || `new_${type}_${this._nodeCounter}`;
+      const defaultPoint = atPoint.x == null && atPoint.y == null ? this._nextNodePoint(size) : atPoint;
+      const node = {
+        id,
+        type,
+        x: this.snap(defaultPoint.x ?? 200),
+        y: this.snap(defaultPoint.y ?? 200),
+        width: size.width,
+        height: size.height,
+        data: defaultTaskProperties({ task_id: id, task_type: type, ...overrides }),
+        orientation: "horizontal",
+        el: null
+      };
+      this.nodes.set(id, node);
+      this._renderNode(node);
+      this._lastAddedNode = node;
+      return node;
+    });
   }
 
   /** Default placement for a newly added node when no explicit position is
@@ -392,42 +557,48 @@ export class DagEditor {
   }
 
   removeNode(nodeId) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-    for (const edge of [...this.edges.values()]) {
-      if (edge.sourceId === nodeId || edge.targetId === nodeId) this._removeEdgeInternal(edge.id);
-    }
-    node.el?.remove();
-    this.nodes.delete(nodeId);
-    this.selectedNodeIds.delete(nodeId);
-    if (this._lastAddedNode === node) this._lastAddedNode = null;
+    this._withUndoableChange(() => {
+      const node = this.nodes.get(nodeId);
+      if (!node) return;
+      for (const edge of [...this.edges.values()]) {
+        if (edge.sourceId === nodeId || edge.targetId === nodeId) this._removeEdgeInternal(edge.id);
+      }
+      node.el?.remove();
+      this.nodes.delete(nodeId);
+      this.selectedNodeIds.delete(nodeId);
+      if (this._lastAddedNode === node) this._lastAddedNode = null;
+    });
   }
 
   renameNode(oldId, newId) {
-    const node = this.nodes.get(oldId);
-    if (!node || oldId === newId) return;
-    node.id = newId;
-    node.data.task_id = newId;
-    this.nodes.delete(oldId);
-    this.nodes.set(newId, node);
-    for (const edge of this.edges.values()) {
-      if (edge.sourceId === oldId) edge.sourceId = newId;
-      if (edge.targetId === oldId) edge.targetId = newId;
-    }
-    if (this.selectedNodeIds.has(oldId)) {
-      this.selectedNodeIds.delete(oldId);
-      this.selectedNodeIds.add(newId);
-    }
-    if (node.el) node.el.dataset.nodeId = newId;
-    this._setNodeLabel(node);
-    this.renderEdges();
+    this._withUndoableChange(() => {
+      const node = this.nodes.get(oldId);
+      if (!node || oldId === newId) return;
+      node.id = newId;
+      node.data.task_id = newId;
+      this.nodes.delete(oldId);
+      this.nodes.set(newId, node);
+      for (const edge of this.edges.values()) {
+        if (edge.sourceId === oldId) edge.sourceId = newId;
+        if (edge.targetId === oldId) edge.targetId = newId;
+      }
+      if (this.selectedNodeIds.has(oldId)) {
+        this.selectedNodeIds.delete(oldId);
+        this.selectedNodeIds.add(newId);
+      }
+      if (node.el) node.el.dataset.nodeId = newId;
+      this._setNodeLabel(node);
+      this.renderEdges();
+    });
   }
 
   updateNodeData(nodeId, partialData) {
-    const node = this.nodes.get(nodeId);
-    if (!node) return;
-    Object.assign(node.data, partialData);
-    this._setNodeLabel(node);
+    this._withUndoableChange(() => {
+      const node = this.nodes.get(nodeId);
+      if (!node) return;
+      Object.assign(node.data, partialData);
+      this._setNodeLabel(node);
+    });
   }
 
   getNode(nodeId) {
@@ -515,6 +686,12 @@ export class DagEditor {
         return { id, x: n.x, y: n.y };
       });
       let dragging = false;
+      // Opened lazily on the first move that actually crosses the drag
+      // threshold, not at mousedown — a plain click (select, no move)
+      // must not open/close an undo transaction at all, since there'd be
+      // nothing to undo (the before/after snapshots would be identical
+      // anyway, but better to not even snapshot for every click).
+      let undoBefore = null;
 
       const onMove = (moveEvent) => {
         const dxScreen = moveEvent.clientX - startX;
@@ -523,6 +700,7 @@ export class DagEditor {
           if (Math.hypot(dxScreen, dyScreen) < DRAG_THRESHOLD_PX) return;
           dragging = true;
           el.style.cursor = "grabbing";
+          undoBefore = this._beginUndoTransaction();
         }
         const dx = dxScreen / this.scale;
         const dy = dyScreen / this.scale;
@@ -534,6 +712,7 @@ export class DagEditor {
         el.style.cursor = "";
         document.removeEventListener("mousemove", onMove, true);
         document.removeEventListener("mouseup", onUp, true);
+        if (dragging) this._endUndoTransaction(undoBefore);
       };
       document.addEventListener("mousemove", onMove, true);
       document.addEventListener("mouseup", onUp, true);
@@ -611,24 +790,28 @@ export class DagEditor {
    * center of the whole selection, so the group settles in the middle
    * rather than snapping to whichever node happened to be highest/lowest. */
   alignSelectedMiddle() {
-    const nodes = this._selectedNodesForAlign();
-    if (nodes.length < 2) return;
-    const avgCenterY = nodes.reduce((sum, n) => sum + n.y + n.height / 2, 0) / nodes.length;
-    for (const node of nodes) {
-      this.moveNode(node.id, node.x, this.snap(avgCenterY - node.height / 2));
-    }
+    this._withUndoableChange(() => {
+      const nodes = this._selectedNodesForAlign();
+      if (nodes.length < 2) return;
+      const avgCenterY = nodes.reduce((sum, n) => sum + n.y + n.height / 2, 0) / nodes.length;
+      for (const node of nodes) {
+        this.moveNode(node.id, node.x, this.snap(avgCenterY - node.height / 2));
+      }
+    });
   }
 
   /** Lines up every selected node on a shared vertical axis (same X) —
    * "Align center": each node's own horizontal center moves to the average
    * center of the whole selection. */
   alignSelectedCenter() {
-    const nodes = this._selectedNodesForAlign();
-    if (nodes.length < 2) return;
-    const avgCenterX = nodes.reduce((sum, n) => sum + n.x + n.width / 2, 0) / nodes.length;
-    for (const node of nodes) {
-      this.moveNode(node.id, this.snap(avgCenterX - node.width / 2), node.y);
-    }
+    this._withUndoableChange(() => {
+      const nodes = this._selectedNodesForAlign();
+      if (nodes.length < 2) return;
+      const avgCenterX = nodes.reduce((sum, n) => sum + n.x + n.width / 2, 0) / nodes.length;
+      for (const node of nodes) {
+        this.moveNode(node.id, this.snap(avgCenterX - node.width / 2), node.y);
+      }
+    });
   }
 
   /** Spreads selected nodes so the horizontal GAPS between consecutive
@@ -638,37 +821,41 @@ export class DagEditor {
    * everything onto one shared line. Needs 3+ nodes: with only 2, there's
    * a single gap and nothing to equalize. */
   distributeSelectedHorizontally() {
-    const nodes = this._selectedNodesForAlign();
-    if (nodes.length < 3) return;
-    nodes.sort((a, b) => a.x - b.x);
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
-    const totalWidth = nodes.reduce((sum, n) => sum + n.width, 0);
-    const span = last.x + last.width - first.x;
-    const gap = (span - totalWidth) / (nodes.length - 1);
-    let cursor = first.x;
-    for (const node of nodes) {
-      this.moveNode(node.id, this.snap(cursor), node.y);
-      cursor += node.width + gap;
-    }
+    this._withUndoableChange(() => {
+      const nodes = this._selectedNodesForAlign();
+      if (nodes.length < 3) return;
+      nodes.sort((a, b) => a.x - b.x);
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const totalWidth = nodes.reduce((sum, n) => sum + n.width, 0);
+      const span = last.x + last.width - first.x;
+      const gap = (span - totalWidth) / (nodes.length - 1);
+      let cursor = first.x;
+      for (const node of nodes) {
+        this.moveNode(node.id, this.snap(cursor), node.y);
+        cursor += node.width + gap;
+      }
+    });
   }
 
   /** Vertical counterpart of distributeSelectedHorizontally() — equal
    * gaps top-to-bottom, topmost/bottommost nodes fixed. */
   distributeSelectedVertically() {
-    const nodes = this._selectedNodesForAlign();
-    if (nodes.length < 3) return;
-    nodes.sort((a, b) => a.y - b.y);
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
-    const totalHeight = nodes.reduce((sum, n) => sum + n.height, 0);
-    const span = last.y + last.height - first.y;
-    const gap = (span - totalHeight) / (nodes.length - 1);
-    let cursor = first.y;
-    for (const node of nodes) {
-      this.moveNode(node.id, node.x, this.snap(cursor));
-      cursor += node.height + gap;
-    }
+    this._withUndoableChange(() => {
+      const nodes = this._selectedNodesForAlign();
+      if (nodes.length < 3) return;
+      nodes.sort((a, b) => a.y - b.y);
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const totalHeight = nodes.reduce((sum, n) => sum + n.height, 0);
+      const span = last.y + last.height - first.y;
+      const gap = (span - totalHeight) / (nodes.length - 1);
+      let cursor = first.y;
+      for (const node of nodes) {
+        this.moveNode(node.id, node.x, this.snap(cursor));
+        cursor += node.height + gap;
+      }
+    });
   }
 
   /** Alignment/distribution only ever act on an explicit selection (unlike
@@ -796,59 +983,63 @@ export class DagEditor {
   /** Validates and creates a connection; returns the created edge, or null
    * if rejected. See SPEC.md "Connection rules". */
   connect(sourceId, targetId, slot = null, offset = 0) {
-    if (sourceId === targetId) return null;
-    const sourceNode = this.nodes.get(sourceId);
-    const targetNode = this.nodes.get(targetId);
-    if (!sourceNode || !targetNode) return null;
+    return this._withUndoableChange(() => {
+      if (sourceId === targetId) return null;
+      const sourceNode = this.nodes.get(sourceId);
+      const targetNode = this.nodes.get(targetId);
+      if (!sourceNode || !targetNode) return null;
 
-    if (this._wouldCreateCycle(sourceId, targetId)) {
-      console.warn("DagEditor: rejected connection — would create a cycle");
-      return null;
-    }
-
-    const targetIsCondition = targetNode.type === "condition";
-    if (targetIsCondition && [...this.edges.values()].some((e) => e.targetId === targetId)) {
-      console.warn("DagEditor: condition nodes accept only one input");
-      return null;
-    }
-
-    const sourceIsCondition = sourceNode.type === "condition";
-    const effectiveSlot = sourceIsCondition ? (slot || "true") : null;
-
-    if (sourceIsCondition) {
-      const otherSlotSameTarget = [...this.edges.values()].some(
-        (e) => e.sourceId === sourceId && e.targetId === targetId && e.slot !== effectiveSlot
-      );
-      if (otherSlotSameTarget) {
-        console.warn("DagEditor: true/false branches cannot both connect to the same node");
+      if (this._wouldCreateCycle(sourceId, targetId)) {
+        console.warn("DagEditor: rejected connection — would create a cycle");
         return null;
       }
-      const stale = [...this.edges.values()].find((e) => e.sourceId === sourceId && e.slot === effectiveSlot);
-      if (stale) this._removeEdgeInternal(stale.id);
-    }
 
-    this._edgeCounter++;
-    // offset: manual perpendicular displacement (model-space px) of the
-    // curved/angled path's midpoint away from its default position, set by
-    // dragging the edge's midpoint handle. 0 until the user drags it.
-    const edge = { id: `edge_${this._edgeCounter}`, sourceId, targetId, slot: effectiveSlot, offset };
-    this.edges.set(edge.id, edge);
+      const targetIsCondition = targetNode.type === "condition";
+      if (targetIsCondition && [...this.edges.values()].some((e) => e.targetId === targetId)) {
+        console.warn("DagEditor: condition nodes accept only one input");
+        return null;
+      }
 
-    if (sourceIsCondition) this._refreshConditionOrientation(sourceNode);
-    if (targetIsCondition) this._refreshConditionOrientation(targetNode);
-    this.renderEdges();
-    return edge;
+      const sourceIsCondition = sourceNode.type === "condition";
+      const effectiveSlot = sourceIsCondition ? (slot || "true") : null;
+
+      if (sourceIsCondition) {
+        const otherSlotSameTarget = [...this.edges.values()].some(
+          (e) => e.sourceId === sourceId && e.targetId === targetId && e.slot !== effectiveSlot
+        );
+        if (otherSlotSameTarget) {
+          console.warn("DagEditor: true/false branches cannot both connect to the same node");
+          return null;
+        }
+        const stale = [...this.edges.values()].find((e) => e.sourceId === sourceId && e.slot === effectiveSlot);
+        if (stale) this._removeEdgeInternal(stale.id);
+      }
+
+      this._edgeCounter++;
+      // offset: manual perpendicular displacement (model-space px) of the
+      // curved/angled path's midpoint away from its default position, set by
+      // dragging the edge's midpoint handle. 0 until the user drags it.
+      const edge = { id: `edge_${this._edgeCounter}`, sourceId, targetId, slot: effectiveSlot, offset };
+      this.edges.set(edge.id, edge);
+
+      if (sourceIsCondition) this._refreshConditionOrientation(sourceNode);
+      if (targetIsCondition) this._refreshConditionOrientation(targetNode);
+      this.renderEdges();
+      return edge;
+    });
   }
 
   disconnect(edgeId) {
-    const edge = this.edges.get(edgeId);
-    if (!edge) return;
-    this._removeEdgeInternal(edgeId);
-    const sourceNode = this.nodes.get(edge.sourceId);
-    const targetNode = this.nodes.get(edge.targetId);
-    if (sourceNode?.type === "condition") this._refreshConditionOrientation(sourceNode);
-    if (targetNode?.type === "condition") this._refreshConditionOrientation(targetNode);
-    this.renderEdges();
+    this._withUndoableChange(() => {
+      const edge = this.edges.get(edgeId);
+      if (!edge) return;
+      this._removeEdgeInternal(edgeId);
+      const sourceNode = this.nodes.get(edge.sourceId);
+      const targetNode = this.nodes.get(edge.targetId);
+      if (sourceNode?.type === "condition") this._refreshConditionOrientation(sourceNode);
+      if (targetNode?.type === "condition") this._refreshConditionOrientation(targetNode);
+      this.renderEdges();
+    });
   }
 
   _removeEdgeInternal(edgeId) {
@@ -1024,6 +1215,7 @@ export class DagEditor {
       const startY = e.clientY;
       this._draggingEdgeId = edge.id;
       handle.classList.add("is-dragging");
+      const undoBefore = this._beginUndoTransaction();
 
       const onMove = (moveEvent) => {
         const dScreen = trackHorizontalMouse ? moveEvent.clientX - startX : moveEvent.clientY - startY;
@@ -1034,6 +1226,7 @@ export class DagEditor {
         this._draggingEdgeId = null;
         document.removeEventListener("mousemove", onMove, true);
         document.removeEventListener("mouseup", onUp, true);
+        this._endUndoTransaction(undoBefore);
         // The handle built during the last onMove still carries
         // is-dragging (set at creation time, before this onUp ran) —
         // re-render once more so it reverts to the normal hover-only look
@@ -1178,23 +1371,25 @@ export class DagEditor {
 
   autoLayout(direction = "horizontal") {
     if (this.nodes.size === 0) return;
-    const rankdir = direction === "vertical" ? "TB" : "LR";
-    const g = new dagre.graphlib.Graph();
-    g.setGraph({ rankdir, nodesep: 40, ranksep: 80 });
-    g.setDefaultEdgeLabel(() => ({}));
-    for (const node of this.nodes.values()) {
-      g.setNode(node.id, { width: node.width, height: node.height });
-    }
-    for (const edge of this.edges.values()) {
-      g.setEdge(edge.sourceId, edge.targetId);
-    }
-    dagre.layout(g);
+    this._withUndoableChange(() => {
+      const rankdir = direction === "vertical" ? "TB" : "LR";
+      const g = new dagre.graphlib.Graph();
+      g.setGraph({ rankdir, nodesep: 40, ranksep: 80 });
+      g.setDefaultEdgeLabel(() => ({}));
+      for (const node of this.nodes.values()) {
+        g.setNode(node.id, { width: node.width, height: node.height });
+      }
+      for (const edge of this.edges.values()) {
+        g.setEdge(edge.sourceId, edge.targetId);
+      }
+      dagre.layout(g);
 
-    for (const node of this.nodes.values()) {
-      const pos = g.node(node.id);
-      if (!pos) continue;
-      this.moveNode(node.id, this.snap(pos.x - node.width / 2), this.snap(pos.y - node.height / 2));
-    }
+      for (const node of this.nodes.values()) {
+        const pos = g.node(node.id);
+        if (!pos) continue;
+        this.moveNode(node.id, this.snap(pos.x - node.width / 2), this.snap(pos.y - node.height / 2));
+      }
+    });
     this.centerView();
   }
 
@@ -1272,6 +1467,12 @@ export class DagEditor {
     this._applyTransform();
     this.renderEdges();
     if (tasks.length > 0) this.centerView();
+
+    // A full-document load/replace is a hard reset point, not a user
+    // action — there's no "before" state a user would expect undo to
+    // bring back (initial mount has none at all; paste-with-replace
+    // intentionally discards the prior graph). See pasteDocument() below.
+    this._clearUndoHistory();
   }
 
   serializeForServer() {
@@ -1466,51 +1667,60 @@ export class DagEditor {
    * ones, depending on `replace`. */
   pasteDocument({ tasks, layout }, replace) {
     if (replace) {
+      // Full-document replace — same "hard reset" treatment as initial
+      // load, not an incremental change (see loadFromServer's own
+      // _clearUndoHistory call).
       this.loadFromServer(tasks, layout || {});
       return;
     }
 
-    const OFFSET = 60;
-    const idMap = new Map();
-    for (const task of tasks) {
-      let newId = task.task_id;
-      let n = 1;
-      while (this.nodes.has(newId)) {
-        newId = `${task.task_id}_copy${n > 1 ? n : ""}`;
-        n++;
+    // Append mode: wrap the whole paste as ONE undo step, not one per
+    // pasted node/edge — addNode()/connect() are each already individually
+    // undoable, but _undoDepth nesting collapses them all into a single
+    // outer transaction here.
+    this._withUndoableChange(() => {
+      const OFFSET = 60;
+      const idMap = new Map();
+      for (const task of tasks) {
+        let newId = task.task_id;
+        let n = 1;
+        while (this.nodes.has(newId)) {
+          newId = `${task.task_id}_copy${n > 1 ? n : ""}`;
+          n++;
+        }
+        idMap.set(task.task_id, newId);
       }
-      idMap.set(task.task_id, newId);
-    }
 
-    for (const task of tasks) {
-      const newId = idMap.get(task.task_id);
-      const type = task.task_type === "condition" ? "condition" : "task";
-      const pos = (layout || {})[task.task_id] || {};
-      this.addNode(type, { x: (pos.x ?? 0) + OFFSET, y: (pos.y ?? 0) + OFFSET }, {
-        task_id: newId,
-        source_code: task.source_code || "",
-        source_language: task.source_language || "python",
-        pool: task.pool || "default_pool",
-        pool_slots: task.pool_slots || 1,
-        priority_weight: task.priority_weight || 1,
-        queue: task.queue || "default",
-        max_tries: task.max_tries || 0,
-        retries: task.retries || 0
-      });
-    }
-
-    for (const task of tasks) {
-      const newSourceId = idMap.get(task.task_id);
-      for (const downstream of task.downstream_list || []) {
-        if (typeof downstream === "string") continue;
-        const newTargetId = idMap.get(downstream.task_id);
-        if (!newTargetId) continue;
-        const slot = downstream.slot && downstream.slot !== "out" ? downstream.slot : null;
-        this.connect(newSourceId, newTargetId, slot, downstream.offset || 0);
+      for (const task of tasks) {
+        const newId = idMap.get(task.task_id);
+        const type = task.task_type === "condition" ? "condition" : "task";
+        const pos = (layout || {})[task.task_id] || {};
+        this.addNode(type, { x: (pos.x ?? 0) + OFFSET, y: (pos.y ?? 0) + OFFSET }, {
+          task_id: newId,
+          source_code: task.source_code || "",
+          source_language: task.source_language || "python",
+          pool: task.pool || "default_pool",
+          pool_slots: task.pool_slots || 1,
+          priority_weight: task.priority_weight || 1,
+          queue: task.queue || "default",
+          max_tries: task.max_tries || 0,
+          retries: task.retries || 0
+        });
       }
-    }
 
-    this.selectNodes([...idMap.values()]);
+      for (const task of tasks) {
+        const newSourceId = idMap.get(task.task_id);
+        for (const downstream of task.downstream_list || []) {
+          if (typeof downstream === "string") continue;
+          const newTargetId = idMap.get(downstream.task_id);
+          if (!newTargetId) continue;
+          const slot = downstream.slot && downstream.slot !== "out" ? downstream.slot : null;
+          this.connect(newSourceId, newTargetId, slot, downstream.offset || 0);
+        }
+      }
+
+      this.selectNodes([...idMap.values()]);
+    });
   }
 
   destroy() {

@@ -73,6 +73,144 @@ defmodule AirWeb.Layouts do
   end
 
   @doc """
+  App shell with a collapsible left sidebar (nav: DAGs / Execution History /
+  Settings) and a main content area for the current page's own markup.
+
+  Collapse state is pure client-side (a CSS width transition + a
+  colocated hook persisting to localStorage, same pattern as the theme
+  toggle's own localStorage persistence) — no server round-trip, so it
+  survives page navigation without needing a process-level assign.
+
+  ## Examples
+
+      <Layouts.sidebar_shell flash={@flash} current_path={@current_path}>
+        <h1>Page content</h1>
+      </Layouts.sidebar_shell>
+  """
+  attr :flash, :map, default: %{}, doc: "the map of flash messages"
+  attr :current_path, :string, default: "", doc: "request path, for highlighting the active nav item"
+  slot :inner_block, required: true
+
+  def sidebar_shell(assigns) do
+    ~H"""
+    <div class="h-screen flex bg-gray-50 dark:bg-gray-900" id="app-shell">
+      <aside
+        id="app-sidebar"
+        phx-hook=".SidebarCollapseHook"
+        data-collapsed-class="app-sidebar-collapsed"
+        class="flex flex-col flex-shrink-0 w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-[width] duration-200 overflow-hidden"
+      >
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".SidebarCollapseHook">
+          export default {
+            mounted() {
+              const STORAGE_KEY = "dagEditor:sidebarCollapsed"
+              const collapsedClass = this.el.dataset.collapsedClass
+              const apply = (collapsed) => this.el.classList.toggle(collapsedClass, collapsed)
+
+              let collapsed = false
+              try { collapsed = localStorage.getItem(STORAGE_KEY) === "true" } catch {}
+              apply(collapsed)
+
+              this.el.querySelector("[data-sidebar-toggle]").addEventListener("click", () => {
+                collapsed = !collapsed
+                apply(collapsed)
+                try { localStorage.setItem(STORAGE_KEY, String(collapsed)) } catch {}
+              })
+            }
+          }
+        </script>
+
+        <div class="flex items-center gap-2 px-4 py-4 flex-shrink-0">
+          <img src={~p"/images/logo.svg"} width="28" class="flex-shrink-0" />
+          <span class="app-sidebar-label font-bold text-gray-900 dark:text-white whitespace-nowrap">Air</span>
+        </div>
+
+        <nav class="flex-1 px-2 space-y-1">
+          <.sidebar_link navigate={~p"/dags"} current_path={@current_path} match="/dags" icon="hero-rectangle-stack">
+            DAGs
+          </.sidebar_link>
+          <.sidebar_link
+            navigate={~p"/demo/dag-execution-history"}
+            current_path={@current_path}
+            match="/demo/dag-execution-history"
+            icon="hero-clock"
+          >
+            Execution History
+          </.sidebar_link>
+          <.sidebar_link navigate={~p"/settings"} current_path={@current_path} match="/settings" icon="hero-cog-6-tooth">
+            Settings
+          </.sidebar_link>
+        </nav>
+
+        <div class="flex items-center justify-between px-2 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div class="app-sidebar-label">
+            <.theme_toggle />
+          </div>
+          <button
+            type="button"
+            data-sidebar-toggle
+            title="Collapse sidebar"
+            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <.icon name="hero-chevron-double-left" class="size-4 app-sidebar-collapse-icon" />
+          </button>
+        </div>
+      </aside>
+
+      <div class="flex-1 min-w-0 flex flex-col">
+        <!-- Top bar: fixed height, never scrolls with the page content
+             below it (flex-shrink-0 on a column flex parent) — reserved
+             for the future login avatar/account menu and any other
+             always-visible, page-independent controls (notifications,
+             global search, etc.) once they exist. Empty for now beyond
+             the placeholder avatar. -->
+        <div class="h-14 flex-shrink-0 flex items-center justify-end gap-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <button
+            type="button"
+            disabled
+            title="Account (not implemented yet)"
+            class="size-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:cursor-default"
+          >
+            <.icon name="hero-user" class="size-4" />
+          </button>
+        </div>
+
+        <main class="flex-1 min-w-0 overflow-y-auto">
+          {render_slot(@inner_block)}
+        </main>
+      </div>
+    </div>
+
+    <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :navigate, :string, required: true
+  attr :current_path, :string, required: true
+  attr :match, :string, required: true
+  attr :icon, :string, required: true
+  slot :inner_block, required: true
+
+  defp sidebar_link(assigns) do
+    assigns = assign(assigns, :active, String.starts_with?(assigns.current_path, assigns.match))
+
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class={[
+        "flex items-center gap-3 px-2.5 py-2 rounded text-sm font-medium transition-colors",
+        @active && "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
+        !@active &&
+          "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+      ]}
+    >
+      <.icon name={@icon} class="size-5 flex-shrink-0" />
+      <span class="app-sidebar-label whitespace-nowrap">{render_slot(@inner_block)}</span>
+    </.link>
+    """
+  end
+
+  @doc """
   Shows the flash group with standard titles and content.
 
   ## Examples

@@ -57,6 +57,7 @@ export const DagEditorHook = {
 
     const editor = new DagEditor(editorContainer, {
       onNodeDoubleClick: (node) => this.pushEvent("open_task_modal", { ...node.data }),
+      onHistoryChange: ({ canUndo, canRedo }) => this._updateUndoRedoButtons(canUndo, canRedo),
       snapToGrid: initialSettings.snap_to_grid ?? false,
       showGrid: initialSettings.show_grid ?? true,
       lineShape: initialSettings.line_shape ?? "angled",
@@ -86,10 +87,23 @@ export const DagEditorHook = {
       }
     }
 
-    // ── Keyboard delete ──
+    // ── Keyboard delete / undo / redo ──
+    // Ctrl+Z / Cmd+Z = undo; Ctrl+Shift+Z or Ctrl+Y / Cmd+Shift+Z = redo
+    // (both redo bindings are common across editors, so support either).
     editorContainer.addEventListener("keydown", (e) => {
       if (e.key === "Delete" || e.key === "Backspace") {
         editor.deleteSelected();
+        return;
+      }
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      if (e.key === "z" || e.key === "Z") {
+        e.preventDefault();
+        if (e.shiftKey) editor.redo();
+        else editor.undo();
+      } else if (e.key === "y" || e.key === "Y") {
+        e.preventDefault();
+        editor.redo();
       }
     });
 
@@ -107,6 +121,8 @@ export const DagEditorHook = {
       const action = btn.dataset.graphAction;
 
       if (action === "save") this.pushEvent("save_graph", editor.serializeForServer());
+      if (action === "undo") editor.undo();
+      if (action === "redo") editor.redo();
     };
     document.addEventListener("click", this._toolbarHandler);
 
@@ -140,6 +156,23 @@ export const DagEditorHook = {
       }
       if (properties.source_language) setLastLanguage(properties.source_language);
     });
+
+    // Buttons start disabled in the server-rendered markup (no history
+    // exists yet at mount); sync them once immediately in case the editor
+    // somehow already has state by the time this listener is wired
+    // (defensive — not expected today, but cheap to be correct about).
+    this._updateUndoRedoButtons(editor.canUndo(), editor.canRedo());
+  },
+
+  /** Keeps the toolbar's Undo/Redo buttons' disabled state in sync with
+   * the editor's undo stack — called from DagEditor's onHistoryChange
+   * callback after every undoable change/undo/redo/history-clear, so the
+   * buttons never go stale without needing to poll. */
+  _updateUndoRedoButtons(canUndo, canRedo) {
+    const undoBtn = document.getElementById("dag-editor-undo-btn");
+    const redoBtn = document.getElementById("dag-editor-redo-btn");
+    if (undoBtn) undoBtn.disabled = !canUndo;
+    if (redoBtn) redoBtn.disabled = !canRedo;
   },
 
   showContextMenu(x, y) {
@@ -173,6 +206,19 @@ export const DagEditorHook = {
             action: () => this.addNodeAt("condition", modelPoint)
           }
         ]
+      },
+      { separator: true },
+      {
+        label: "Undo",
+        icon: "hero-arrow-uturn-left",
+        disabled: !this.editor.canUndo(),
+        action: () => this.editor.undo()
+      },
+      {
+        label: "Redo",
+        icon: "hero-arrow-uturn-right",
+        disabled: !this.editor.canRedo(),
+        action: () => this.editor.redo()
       },
       { separator: true },
       {

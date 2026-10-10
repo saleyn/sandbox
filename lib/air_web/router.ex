@@ -17,8 +17,9 @@ defmodule AirWeb.Router do
   scope "/", AirWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", Pages.DagList
     live "/dags", Pages.DagList
+    live "/settings", Pages.Settings
     live "/demo/dag-execution-history", Pages.DagExecutionHistoryDemo
     live "/demo/dag-execution-history/:dag_id", Pages.DagExecutionHistoryDemo
     live "/dag/editor", Pages.DagEditor

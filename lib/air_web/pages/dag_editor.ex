@@ -11,21 +11,7 @@ defmodule AirWeb.Pages.DagEditor do
 
   require Logger
 
-  alias Air.{DAG, DagEditorQuery}
-
-  # Editor chrome preferences (snap-to-grid, grid visibility, line style,
-  # etc.) — these belong to the user, not the DAG, so they're kept separate
-  # from @graph_data/layout. There's no accounts/session system yet to
-  # persist them against (see update_settings/3 below), so every mount
-  # currently starts from these hardcoded defaults.
-  @default_settings %{
-    snap_to_grid: false,
-    show_grid: true,
-    line_shape: "angled",
-    line_width: 2,
-    arrow_position: "end",
-    layout_direction: "horizontal"
-  }
+  alias Air.{AppSettingsQuery, DAG, DagEditorQuery}
 
   @impl true
   def mount(params, _session, socket) do
@@ -60,7 +46,7 @@ defmodule AirWeb.Pages.DagEditor do
       |> assign(dag: dag)
       |> assign(dag_id: dag.dag_id)
       |> assign(graph_data: Jason.encode!(graph_data))
-      |> assign(settings_data: Jason.encode!(@default_settings))
+      |> assign(settings_data: Jason.encode!(AppSettingsQuery.as_editor_defaults()))
       |> assign(is_new: is_new)
       |> assign(selected_task: nil)
       |> assign(show_modal: false)
@@ -107,7 +93,17 @@ defmodule AirWeb.Pages.DagEditor do
   end
 
   def handle_event("update_settings", %{"name" => name, "value" => value}, socket) do
-    Logger.info("DagEditor update_settings: #{name} = #{inspect(value)} — To be implemented")
+    # Persists as the new app-wide default for the NEXT editor session to
+    # start from — not retroactive for any other tab/session already open,
+    # same as toolbar changes already only affect the current session live.
+    case AppSettingsQuery.update(%{name => value}) do
+      {:ok, _settings} ->
+        :ok
+
+      {:error, changeset} ->
+        Logger.warning("DagEditor update_settings: rejected #{name}=#{inspect(value)} — #{inspect(changeset.errors)}")
+    end
+
     {:noreply, socket}
   end
 
@@ -163,7 +159,8 @@ defmodule AirWeb.Pages.DagEditor do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-screen flex flex-col">
+    <Layouts.sidebar_shell flash={@flash} current_path="/dag/editor">
+    <div class="h-full flex flex-col">
       <!-- Title bar — kept OUTSIDE #dag-editor-root's phx-update="ignore"
            subtree (same reasoning as the drawers below): LiveView needs to
            patch @dag.title here whenever it's edited in the Properties
@@ -179,6 +176,27 @@ defmodule AirWeb.Pages.DagEditor do
         <span class="text-lg text-gray-700 dark:text-gray-300 truncate"><%= @dag.title %></span>
 
         <div class="flex items-center gap-3 ml-auto">
+          <button
+            type="button"
+            id="dag-editor-undo-btn"
+            data-graph-action="undo"
+            title="Undo (Ctrl+Z)"
+            disabled
+            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          >
+            <.icon name="hero-arrow-uturn-left" class="size-4" />
+          </button>
+          <button
+            type="button"
+            id="dag-editor-redo-btn"
+            data-graph-action="redo"
+            title="Redo (Ctrl+Shift+Z)"
+            disabled
+            class="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          >
+            <.icon name="hero-arrow-uturn-right" class="size-4" />
+          </button>
+
           <button
             type="button"
             phx-click="open_properties_drawer"
@@ -639,6 +657,7 @@ defmodule AirWeb.Pages.DagEditor do
         </div>
       </div>
     <% end %>
+    </Layouts.sidebar_shell>
     """
   end
 
