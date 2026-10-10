@@ -14,6 +14,8 @@ defmodule Air.Application do
       {Phoenix.PubSub, name: Air.PubSub},
       # Listens to Postgres notifications and broadcasts them to LiveViews
       Air.DbListener,
+      # Periodically purges DAGs soft-deleted more than 30 days ago
+      Air.DagRetentionJob,
       # Supervises the background processes that step through a simulated
       # DAG run (see Air.DagRunSimulator) so a crash there can't take down
       # the app.

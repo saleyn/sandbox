@@ -21,6 +21,12 @@ defmodule Air.DagTask do
     field :queue, :string, default: "default"
     field :max_tries, :integer, default: 0
     field :retries, :integer, default: 0
+    # Soft-delete marker, set when the parent DAG is soft-deleted (see
+    # Air.DAG.deleted_at and DagEditorQuery.delete_dag/1) — not
+    # independently settable per-task today, but its own column so a
+    # task's deletion timestamp doesn't have to be inferred by joining
+    # back to the DAG.
+    field :deleted_at, :utc_datetime
 
     belongs_to :dag, Air.DAG, foreign_key: :dag_id, references: :dag_id, define_field: false
     has_many :instances, Air.TaskInstance, foreign_key: :task_id, references: :task_id

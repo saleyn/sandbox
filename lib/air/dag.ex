@@ -23,6 +23,12 @@ defmodule Air.DAG do
     field :layout, :map, default: %{}
     field :source_code, :string
     field :source_language, :string, default: "python"
+    # Soft-delete marker — set means deleted (hidden from all normal
+    # queries); a background job hard-deletes rows 30 days after this is
+    # set (see Air.DagRetentionJob). Deliberately NOT in changeset/2's cast
+    # list below — set only via DagEditorQuery.delete_dag/1 /
+    # restore_dag/1, never through the generic properties-editing form.
+    field :deleted_at, :utc_datetime
 
     has_many :runs, Air.DagRun, foreign_key: :dag_id, references: :dag_id
     has_many :tasks, Air.DagTask, foreign_key: :dag_id, references: :dag_id
@@ -49,6 +55,12 @@ defmodule Air.DAG do
       :source_language
     ])
     |> validate_required([:dag_id, :title])
-    |> unique_constraint(:dag_id)
+    # dag_id is the primary key, not just a separately-indexed unique
+    # column — Postgres reports a violation against the "dag_pkey"
+    # constraint, not the "dag_dag_id_index" name unique_constraint/3
+    # assumes by default from the field name. Without pointing at the
+    # right name explicitly, a duplicate dag_id insert raises
+    # Ecto.ConstraintError instead of returning {:error, changeset}.
+    |> unique_constraint(:dag_id, name: :dag_pkey)
   end
 end
