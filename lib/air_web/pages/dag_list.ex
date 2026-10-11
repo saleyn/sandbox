@@ -327,15 +327,14 @@ defmodule AirWeb.Pages.DagList do
                     >
                       <.icon name="hero-pencil-square" class="size-4" />
                     </.link>
-                    <button
-                      type="button"
+                    <.icon_button
+                      icon="hero-document-duplicate"
+                      tooltip={:top_right}
+                      class="p-1.5 rounded text-base-content/50 hover:text-primary hover:bg-base-200"
                       aria-label="Copy as JSON"
                       phx-click="copy_dag"
                       phx-value-dag_id={dag.dag_id}
-                      class={["p-1.5 text-base-content/50 hover:text-primary rounded hover:bg-base-200" | tooltip_class(:top_right)]}
-                    >
-                      <.icon name="hero-document-duplicate" class="size-4" />
-                    </button>
+                    />
 
                     <%= if @pending_delete_id == dag.dag_id do %>
                       <button
@@ -354,15 +353,14 @@ defmodule AirWeb.Pages.DagList do
                         Cancel
                       </button>
                     <% else %>
-                      <button
-                        type="button"
+                      <.icon_button
+                        icon="hero-trash"
+                        tooltip={:top_right}
+                        class="p-1.5 rounded text-base-content/50 hover:text-error hover:bg-base-200"
                         aria-label="Delete"
                         phx-click="confirm_delete"
                         phx-value-dag_id={dag.dag_id}
-                        class={["p-1.5 text-base-content/50 hover:text-error rounded hover:bg-base-200" | tooltip_class(:top_right)]}
-                      >
-                        <.icon name="hero-trash" class="size-4" />
-                      </button>
+                      />
                     <% end %>
                   </div>
                 </td>

@@ -106,7 +106,7 @@ defmodule AirWeb.Layouts do
         id="app-sidebar"
         phx-hook=".SidebarCollapseHook"
         data-collapsed-class="app-sidebar-collapsed"
-        class="fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 md:static flex flex-col flex-shrink-0 w-56 bg-base-100 border-r border-base-300 transition-[transform,width] duration-200 overflow-hidden"
+        class="fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 md:static flex flex-col flex-shrink-0 w-56 bg-base-100 border-r border-base-300 transition-[transform,width] duration-200"
       >
         <script :type={Phoenix.LiveView.ColocatedHook} name=".SidebarCollapseHook">
           export default {
@@ -194,14 +194,14 @@ defmodule AirWeb.Layouts do
           <div class="app-sidebar-label">
             <.theme_toggle />
           </div>
-          <button
-            type="button"
+          <.icon_button
+            icon="hero-chevron-double-left"
+            icon_class="size-4 app-sidebar-collapse-icon"
+            tooltip={:top}
+            class="hidden md:block p-1.5 rounded text-base-content/50 hover:text-base-content hover:bg-base-200"
             data-sidebar-toggle
             aria-label="Collapse sidebar"
-            class={["hidden md:block p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200" | tooltip_class(:top)]}
-          >
-            <.icon name="hero-chevron-double-left" class="size-4 app-sidebar-collapse-icon" />
-          </button>
+          />
         </div>
       </aside>
 
@@ -218,23 +218,24 @@ defmodule AirWeb.Layouts do
              global search, etc.) once they exist. Empty for now beyond
              the placeholder avatar. -->
         <div class="h-14 flex-shrink-0 flex items-center justify-between gap-3 px-4 border-b border-base-300 bg-base-100">
-          <button
-            type="button"
+          <.icon_button
+            icon="hero-bars-3"
+            icon_class="size-5"
+            tooltip={:bottom_left}
+            class="md:hidden p-1.5 -ml-1.5 rounded text-base-content/50 hover:text-base-content hover:bg-base-200"
             id="app-sidebar-mobile-toggle"
             aria-label="Open menu"
-            class={["md:hidden p-1.5 -ml-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200" | tooltip_class(:bottom_left)]}
-          >
-            <.icon name="hero-bars-3" class="size-5" />
-          </button>
+          />
           <div class="flex-1"></div>
-          <button
-            type="button"
+          <.icon_button
+            icon="hero-user"
+            icon_class="size-4"
+            variant="circle"
+            tooltip={:bottom_right}
+            class="size-8 rounded-full bg-base-300 text-base-content/50 disabled:cursor-default"
             disabled
             aria-label="Account (not implemented yet)"
-            class={["size-8 flex items-center justify-center rounded-full bg-base-300 text-base-content/50 disabled:cursor-default" | tooltip_class(:bottom_right)]}
-          >
-            <.icon name="hero-user" class="size-4" />
-          </button>
+          />
         </div>
 
         <main class="flex-1 min-w-0 overflow-y-auto">
@@ -289,9 +290,26 @@ defmodule AirWeb.Layouts do
       class={
         [
           "app-sidebar-nav-link w-full flex items-center justify-start gap-3 px-2.5 py-2 rounded text-sm font-medium transition-colors app-sidebar-collapsed-tooltip",
-          @active && "bg-ghost/10 text-ghost",
+          # A neutral hover:bg-base-200 read as mismatched/muddy against the
+          # active row's ghost-tinted highlight right below it — hover now
+          # previews the SAME ghost hue, just more intense than whichever
+          # resting state it's layered on top of, instead of an unrelated
+          # gray. Selected's resting tint (/20) now matches what used to be
+          # a plain row's HOVER intensity — a selected row should already
+          # look at least as prominent as a merely-hovered one — and every
+          # hover (on either state) goes brighter still (/35, /45) so
+          # hovering never looks identical to, or weaker than, resting
+          # selected. text-ghost-content (not text-ghost): ghost and
+          # ghost-content default to the SAME hex in both themes (see
+          # Air.ThemePreset's color keys), so at these higher bg opacities
+          # text-ghost text was blending into its own bg-ghost background —
+          # ghost-content is the color actually meant to sit ON TOP of a
+          # ghost-colored surface (same role panel-title-content plays for
+          # panel-title), so it stays legible at any tint intensity instead
+          # of just at a bare 10%.
+          @active && "bg-ghost/20 text-ghost-content hover:bg-ghost/45",
           !@active &&
-            "text-base-content/70 hover:bg-base-200"
+            "text-base-content/70 hover:bg-ghost/35 hover:text-ghost-content"
         ] ++ tooltip_class(:right)
       }
     >
@@ -482,6 +500,47 @@ defmodule AirWeb.Layouts do
           <.icon name="hero-moon-micro" class="size-4" /> Dark
         </button>
       </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the system/light/dark choice as one connected segmented-button
+  group (all three always visible) instead of theme_toggle/1's
+  icon-trigger + popover-menu. Same underlying mechanism — clicking a
+  segment dispatches the same `phx:set-theme` custom event root.html.heex
+  listens for, and the active segment is picked via the same
+  data-theme/data-theme-source ancestor-selector CSS trick — so this is
+  purely an alternate, always-expanded presentation for pages (like the
+  Theme Editor) where the choice should be visible at a glance rather
+  than tucked behind a click.
+  """
+  def theme_toggle_group(assigns) do
+    ~H"""
+    <div class="inline-flex rounded-lg border border-base-300 overflow-hidden" role="group" aria-label="Color theme">
+      <.icon_button
+        icon="hero-computer-desktop-micro"
+        class="px-2.5 py-1.5 border-r border-base-300 [[data-theme-source=system]_&]:bg-base-200 [[data-theme-source=system]_&]:text-base-content [[data-theme-source=user]_&]:text-base-content/50 [[data-theme-source=user]_&]:hover:bg-base-200 [[data-theme-source=user]_&]:hover:text-base-content"
+        phx-click={JS.dispatch("phx:set-theme")}
+        data-phx-theme="system"
+        aria-label="Use system theme"
+      />
+
+      <.icon_button
+        icon="hero-sun-micro"
+        class="px-2.5 py-1.5 border-r border-base-300 text-base-content/50 hover:bg-base-200 hover:text-base-content [[data-theme-source=user][data-theme=light]_&]:bg-base-200 [[data-theme-source=user][data-theme=light]_&]:text-base-content"
+        phx-click={JS.dispatch("phx:set-theme")}
+        data-phx-theme="light"
+        aria-label="Use light theme"
+      />
+
+      <.icon_button
+        icon="hero-moon-micro"
+        class="px-2.5 py-1.5 text-base-content/50 hover:bg-base-200 hover:text-base-content [[data-theme-source=user][data-theme=dark]_&]:bg-base-200 [[data-theme-source=user][data-theme=dark]_&]:text-base-content"
+        phx-click={JS.dispatch("phx:set-theme")}
+        data-phx-theme="dark"
+        aria-label="Use dark theme"
+      />
     </div>
     """
   end

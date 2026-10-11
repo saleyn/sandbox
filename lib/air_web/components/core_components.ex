@@ -78,9 +78,12 @@ defmodule AirWeb.CoreComponents do
           <p>{msg}</p>
         </div>
         <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
-        </button>
+        <.icon_button
+          icon="hero-x-mark"
+          icon_class="size-5 opacity-40 group-hover:opacity-70"
+          class="group self-start"
+          aria-label={gettext("close")}
+        />
       </div>
     </div>
     """
@@ -498,6 +501,88 @@ defmodule AirWeb.CoreComponents do
   """
   def tooltip_class(direction) when direction in ~w(top bottom bottom_right top_right top_left bottom_left right)a do
     ["hover-tooltip", "hover-tooltip-#{direction |> to_string() |> String.replace("_", "-")}"]
+  end
+
+  @doc """
+  Renders a button whose entire visible content is one icon — the shared
+  shape every hand-rolled icon-only `<button>` across the app (toolbar
+  actions, drawer/dialog close buttons, the theme toggle's segments, etc.)
+  used to duplicate individually, each with its own copy of the
+  size/shape/hover classes.
+
+  The "clicked" press/release effect (quick shrink-on-press) is a GLOBAL
+  `button { }` / `button:active { }` rule in app.css, not something this
+  component adds — it used to be a per-component `active:scale-90`
+  Tailwind class here, but that left every hand-rolled text+icon button
+  elsewhere (Apply, Save, Cancel, New theme, etc. — far more common than
+  icon-only buttons) with no press feedback at all, inconsistent with the
+  ones that happened to go through this component. One global rule reaches
+  every `<button>` app-wide, present and future, with no per-call-site
+  class to remember.
+
+  `variant` only picks the button's display/flex-centering mode — never
+  `padding`/`size-*`/`rounded-*`/`border-*`/colors — because Tailwind
+  utility precedence depends on stylesheet generation order, not on where
+  a class sits in the `class` list: a variant that baked in e.g. `p-1.5`
+  or `rounded` could NOT be reliably overridden by a caller's own `p-0`
+  or `rounded-full` appended after it in `class`. Every call site supplies
+  its OWN padding/size/radius/border/color via `class`, same as it did
+  before extraction:
+    * `"compact"` (default) — no extra layout classes; for toolbar-style
+      buttons sitting directly on a bar (undo/redo, sidebar collapse,
+      flash close) that just need `class="p-1.5 rounded ..."` and similar.
+    * `"square"` / `"circle"` — both add `inline-flex items-center
+      justify-center` (centering an icon inside a fixed box needs this
+      regardless of what size/radius that box ends up being) — the name
+      is purely documentation of INTENT at the call site, not a promise
+      of baked-in sizing.
+
+  `class` is where every call site's actual look lives — always include
+  your own padding/size/radius/border/color classes there.
+
+  `tooltip` is optional; when given, merges `tooltip_class/1`'s classes in
+  automatically (reusing the `aria-label` callers already pass via `rest`
+  for accessibility) instead of every call site doing it by hand.
+
+  ## Examples
+
+      <.icon_button icon="hero-trash" tooltip={:top_right} variant="square"
+        class="border-error/30 text-error hover:bg-error/10"
+        phx-click="delete_preset" aria-label="Delete theme" />
+
+      <.icon_button icon="hero-arrow-uturn-left" tooltip={:bottom}
+        id="dag-editor-undo-btn" data-graph-action="undo"
+        aria-label="Undo (Ctrl+Z)" disabled />
+  """
+  attr :icon, :string, required: true
+  attr :icon_class, :any, default: "size-4"
+  attr :variant, :string, default: "compact", values: ~w(compact square circle)
+  attr :tooltip, :atom, default: nil, values: ~w(top bottom bottom_right top_right top_left bottom_left right)a ++ [nil]
+  attr :class, :any, default: nil
+  attr :rest, :global, include: ~w(disabled aria-label aria-haspopup title), doc: "phx-click, data-*, id, disabled, aria-label, etc."
+
+  def icon_button(assigns) do
+    variants = %{
+      "compact" => nil,
+      "square" => "inline-flex items-center justify-center",
+      "circle" => "inline-flex items-center justify-center shrink-0"
+    }
+
+    assigns = assign(assigns, :variant_class, Map.fetch!(variants, assigns.variant))
+
+    ~H"""
+    <button
+      type="button"
+      class={[
+        @variant_class,
+        @class,
+        @tooltip && tooltip_class(@tooltip)
+      ]}
+      {@rest}
+    >
+      <.icon name={@icon} class={@icon_class} />
+    </button>
+    """
   end
 
   @doc """

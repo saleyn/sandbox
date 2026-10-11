@@ -338,7 +338,7 @@ class GrafanaDatePicker {
             <div class="relative">
               <button
                 type="button"
-                class="gdp-timezone-btn flex items-center gap-2 ${sz.tzBtnPad} text-sm bg-base-200 hover:bg-base-300 text-base-content rounded transition-colors"
+                class="gdp-timezone-btn flex items-center gap-2 ${sz.tzBtnPad} text-sm bg-field border border-base-300 text-field-content hover:border-focus rounded transition-colors"
               >
                 <span class="gdp-timezone-display">UTC-04:00</span>
                 <span class="gdp-timezone-chevron inline-flex items-center justify-center transition-transform duration-150">
@@ -528,10 +528,17 @@ class GrafanaDatePicker {
     const hideTimezonePanel = () => {
       timezonePanel.classList.add('hidden');
       timezoneChevron?.classList.remove('rotate-180');
+      timezoneBtn?.classList.remove('border-focus');
     };
     const showTimezonePanel = () => {
       timezonePanel.classList.remove('hidden');
       timezoneChevron?.classList.add('rotate-180');
+      // Matches every other field's focus:border-focus — this trigger is a
+      // <button>, not a text input, so it has no native :focus state tied
+      // to "the dropdown it owns is open"; toggling the same border-focus
+      // class by hand keeps it visually consistent with the rest of the
+      // picker's fields while its panel is the active one on screen.
+      timezoneBtn?.classList.add('border-focus');
     };
 
     // Toggle panel on click anywhere in the trigger (the icon spans

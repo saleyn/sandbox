@@ -203,6 +203,28 @@
 
 /* This file is for your main application CSS */
 
+/* App-wide "clicked" press effect: every <button> briefly shrinks while
+   held and springs back on release. Global (not a utility class applied
+   per call site) so it reaches every button automatically — the hand-rolled
+   icon/text buttons across lib/air_web/ (Apply, Save, Cancel, New theme,
+   etc.) vastly outnumber the ones routed through a shared component, and a
+   class-based approach would need to be added to every one of them by hand
+   and would silently miss any new button that forgets it. `:not(.hover-tooltip)`
+   is NOT needed here — this only touches `transform`, which the tooltip's
+   own ::before/::after pseudo-elements position independently (an
+   element's `transform` doesn't affect its pseudo-elements' own `top`/
+   `left`/`transform` values) — so the press effect and the tooltip arrow
+   geometry never fight each other. (AirWeb.CoreComponents.icon_button's
+   own active:scale-90 predates this and is now redundant with it, but
+   left in place rather than removed — harmless to have both the Tailwind
+   utility and this rule target the same property with the same value.) */
+button {
+  transition: transform 0.1s ease-out;
+}
+button:active {
+  transform: scale(0.95);
+}
+
 /* DAG execution history grid: row/column hover highlight (toggled by the
    .DagGridHover colocated hook). Highlighting uses an inset box-shadow to
    brighten each matching cell's background only — box-shadow paints beneath
@@ -383,6 +405,30 @@
 .hover-tooltip:hover::after {
   opacity: 1;
 }
+/* The callout arrow: a 6x6px square rotated 45deg, same background as the
+   tooltip box (::after) it's paired with, laid UNDER the box (z-index 9 <
+   10) so the box's own rounded corner/edge visually overlaps and hides
+   the half of the diamond that would otherwise stick out past the box's
+   straight edge — only the outward-pointing triangular half remains
+   visible, with no separate clip-path or border-triangle trick needed.
+   A second pseudo-element (::before) is required (not a second ::after)
+   since each element only gets one of each; ::before carries the arrow,
+   ::after keeps the box, both keyed off the same :hover state. */
+.hover-tooltip::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  width: 0.4rem;
+  height: 0.4rem;
+  background-color: var(--color-neutral);
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  z-index: 9;
+  transform: rotate(45deg);
+}
+.hover-tooltip:hover::before {
+  opacity: 1;
+}
 /* Position modifiers — pick ONE per trigger based on which corner/edge of
    the button the tooltip should hang off, matching wherever there's open
    space in that part of the page (e.g. a top-row button points its
@@ -391,12 +437,21 @@
    (e.g. `top-full right-0`) because the positioned box is the ::after
    PSEUDO-element, not the trigger element those utilities would apply to
    — Tailwind has no built-in variant targeting `::after` positioning like
-   this, so each direction is spelled out here once instead. */
+   this, so each direction is spelled out here once instead. Each
+   direction's ::before (arrow) sits at the midpoint of the ::after's own
+   edge closest to the trigger, nudged half its own size so the rotated
+   square's center — not corner — lands exactly on that edge. */
 .hover-tooltip-top::after {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   margin-bottom: 0.25rem;
+}
+.hover-tooltip-top::before {
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: calc(0.25rem - 0.2rem);
+  transform: translateX(-50%) rotate(45deg);
 }
 .hover-tooltip-bottom::after {
   top: 100%;
@@ -404,31 +459,67 @@
   transform: translateX(-50%);
   margin-top: 0.25rem;
 }
+.hover-tooltip-bottom::before {
+  top: 100%;
+  left: 50%;
+  margin-top: calc(0.25rem - 0.2rem);
+  transform: translateX(-50%) rotate(45deg);
+}
 .hover-tooltip-bottom-right::after {
   top: 100%;
   right: 0;
   margin-top: 0.25rem;
+}
+.hover-tooltip-bottom-right::before {
+  top: 100%;
+  right: 0.5rem;
+  margin-top: calc(0.25rem - 0.2rem);
+  transform: rotate(45deg);
 }
 .hover-tooltip-bottom-left::after {
   top: 100%;
   left: 0;
   margin-top: 0.25rem;
 }
+.hover-tooltip-bottom-left::before {
+  top: 100%;
+  left: 0.5rem;
+  margin-top: calc(0.25rem - 0.2rem);
+  transform: rotate(45deg);
+}
 .hover-tooltip-top-right::after {
   bottom: 100%;
   right: 0;
   margin-bottom: 0.25rem;
+}
+.hover-tooltip-top-right::before {
+  bottom: 100%;
+  right: 0.5rem;
+  margin-bottom: calc(0.25rem - 0.2rem);
+  transform: rotate(45deg);
 }
 .hover-tooltip-top-left::after {
   bottom: 100%;
   left: 0;
   margin-bottom: 0.25rem;
 }
+.hover-tooltip-top-left::before {
+  bottom: 100%;
+  left: 0.5rem;
+  margin-bottom: calc(0.25rem - 0.2rem);
+  transform: rotate(45deg);
+}
 .hover-tooltip-right::after {
   left: 100%;
   top: 50%;
   transform: translateY(-50%);
   margin-left: 0.5rem;
+}
+.hover-tooltip-right::before {
+  left: 100%;
+  top: 50%;
+  margin-left: calc(0.5rem - 0.2rem);
+  transform: translateY(-50%) rotate(45deg);
 }
 
 /* Mobile off-canvas open state (below md) — slides the fixed-position

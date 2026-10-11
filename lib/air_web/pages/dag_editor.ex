@@ -176,26 +176,24 @@ defmodule AirWeb.Pages.DagEditor do
         <span class="text-lg text-base-content/70 truncate"><%= @dag.title %></span>
 
         <div class="flex items-center gap-3 ml-auto">
-          <button
-            type="button"
+          <.icon_button
+            icon="hero-arrow-uturn-left"
+            tooltip={:bottom}
+            class="p-1.5 rounded text-base-content/50 hover:text-base-content hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             id="dag-editor-undo-btn"
             data-graph-action="undo"
             aria-label="Undo (Ctrl+Z)"
             disabled
-            class={["p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors" | tooltip_class(:bottom)]}
-          >
-            <.icon name="hero-arrow-uturn-left" class="size-4" />
-          </button>
-          <button
-            type="button"
+          />
+          <.icon_button
+            icon="hero-arrow-uturn-right"
+            tooltip={:bottom}
+            class="p-1.5 rounded text-base-content/50 hover:text-base-content hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors"
             id="dag-editor-redo-btn"
             data-graph-action="redo"
             aria-label="Redo (Ctrl+Shift+Z)"
             disabled
-            class={["p-1.5 text-base-content/50 hover:text-base-content rounded hover:bg-base-200 disabled:opacity-30 disabled:pointer-events-none transition-colors" | tooltip_class(:bottom)]}
-          >
-            <.icon name="hero-arrow-uturn-right" class="size-4" />
-          </button>
+          />
 
           <button
             type="button"
@@ -512,7 +510,7 @@ defmodule AirWeb.Pages.DagEditor do
                   value={@dag_id}
                   label="ID"
                   disabled
-                  class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm font-mono"
+                  class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content/50 text-sm font-mono opacity-60 cursor-not-allowed"
                 />
                 <div class="col-span-2">
                   <.input
@@ -549,7 +547,7 @@ defmodule AirWeb.Pages.DagEditor do
                     type="text"
                     value={format_timestamp(@dag.inserted_at)}
                     disabled
-                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content/50 text-sm opacity-60 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -558,7 +556,7 @@ defmodule AirWeb.Pages.DagEditor do
                     type="text"
                     value={format_timestamp(@dag.updated_at)}
                     disabled
-                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content/50 text-sm opacity-60 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -567,7 +565,7 @@ defmodule AirWeb.Pages.DagEditor do
                     type="text"
                     value={@dag.created_by || "—"}
                     disabled
-                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content/50 text-sm opacity-60 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -576,7 +574,7 @@ defmodule AirWeb.Pages.DagEditor do
                     type="text"
                     value={@dag.updated_by || "—"}
                     disabled
-                    class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded text-base-content/50 text-sm"
+                    class="w-full px-3 py-2 bg-field border border-base-300 rounded text-field-content/50 text-sm opacity-60 cursor-not-allowed"
                   />
                 </div>
               </div>

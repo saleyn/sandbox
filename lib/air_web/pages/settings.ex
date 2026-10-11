@@ -32,8 +32,23 @@ defmodule AirWeb.Pages.Settings do
      |> assign_form(AppSettings.changeset(AppSettingsQuery.get(), %{}))
      |> assign_presets()
      |> assign(:selected_preset_id, nil)
-     |> assign(:open_scheme, "light")
+     |> assign(:open_scheme, active_scheme(socket))
      |> assign_preset_form(nil)}
+  end
+
+  # The accordion should open on whichever scheme (light/dark) is currently
+  # displayed, not always default to "light" — root.html.heex sets
+  # <html data-theme> client-side before the socket connects, and app.js
+  # mirrors it into connect params (see its LiveSocket params fn), so it's
+  # already available by the time this mount runs on the live (connected)
+  # render. The first, disconnected render has no connect params yet; it
+  # falls back to "light" and gets silently replaced by the connected
+  # mount's real value a moment later, same as any other connect-params read.
+  defp active_scheme(socket) do
+    case get_connect_params(socket) do
+      %{"theme" => "dark"} -> "dark"
+      _ -> "light"
+    end
   end
 
   @impl true
@@ -254,15 +269,7 @@ defmodule AirWeb.Pages.Settings do
             already mounts one with the default id on the same page.
           -->
           <div :if={@tab == "theme"} class="mb-2 flex items-center gap-2">
-            <Layouts.theme_toggle id="theme-editor-theme-toggle" />
-            <button
-              type="button"
-              phx-click={open_color_guide()}
-              aria-label="What is each color used for?"
-              class={["size-5 shrink-0 flex items-center justify-center rounded-full border border-base-300 text-base-content/50 hover:text-base-content hover:border-base-content/50 text-xs font-semibold" | tooltip_class(:bottom_right)]}
-            >
-              ?
-            </button>
+            <Layouts.theme_toggle_group />
           </div>
         </div>
 
@@ -315,14 +322,14 @@ defmodule AirWeb.Pages.Settings do
     >
       <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 flex-shrink-0">
         <h2 class="text-sm font-semibold text-base-content">What each color is used for</h2>
-        <button
-          type="button"
+        <.icon_button
+          icon="hero-x-mark"
+          icon_class="size-5"
+          tooltip={:bottom_right}
+          class="p-1 rounded text-base-content/50 hover:text-base-content hover:bg-base-200"
           phx-click={close_color_guide()}
           aria-label="Close"
-          class={["p-1 rounded text-base-content/50 hover:text-base-content hover:bg-base-200" | tooltip_class(:bottom_right)]}
-        >
-          <.icon name="hero-x-mark" class="size-5" />
-        </button>
+        />
       </div>
       <!--
         min-h-0 is load-bearing on a flex child that needs to scroll: a
@@ -360,43 +367,39 @@ defmodule AirWeb.Pages.Settings do
     |> JS.add_class("translate-x-full", to: "#color-guide-drawer")
   end
 
-  # The long-form text shown in the (?) drawer, one entry per color key —
-  # kept here (not in Air.ThemePreset) since this is UI copy, not theme
-  # data. Each entry's displayed TITLE comes from
-  # Air.ThemePreset.shade_caption/1 — the same function the swatch grid
-  # itself uses — so the drawer can never drift out of sync with what the
-  # swatch labels actually say (e.g. both say "background", never
-  # "background" in one place and "base-100" in the other).
+  # The long-form text shown in the (?) drawer. One entry per SWATCH, not
+  # per color key — color_swatch_pair/1 collapsed every genuine 1:1
+  # bg/"-content" pairing (primary/primary-content, ghost/ghost-content,
+  # etc.) into one swatch showing both colors at once, so a separate guide
+  # entry for each half would describe two things the swatch grid no
+  # longer shows as two things. Pairs get one entry covering both colors;
+  # plain swatches (color_swatch_plain/1 — a background nothing sits on
+  # top of, or a content color shared by multiple backgrounds) keep their
+  # own single entry, same as before. Kept here (not in Air.ThemePreset)
+  # since this is UI copy, not theme data. Each entry's displayed TITLE
+  # comes from Air.ThemePreset.shade_caption/1 applied to the swatch's
+  # bg_key (pairs) or key (plain) — the same value the swatch's own
+  # caption uses — so the drawer can never drift out of sync with what the
+  # swatch label actually says.
   defp theme_color_guide do
     for {key, description} <- [
-          {"base-100", "The background of panels and cards — the default surface almost everything sits on."},
+          {"base-100", "The background of panels and cards — the default surface almost everything sits on. Its paired \"-content\" (base-content) is the default text color drawn on top of it."},
           {"window", "The background of the main app window/shell behind panels (the sidebar area, the DAG editor's canvas) — deliberately separate from \"hover\" so the two don't look identical."},
           {"base-300", "The color of borders and dividers between panels, inputs, and list rows."},
-          {"base-content", "The default text color used on top of base-100/window backgrounds."},
+          {"panel-title", "Background of section/table headers — a form panel's own uppercase section label, a table's header row. Its paired \"-content\" is the text color drawn on top of it."},
+          {"ghost", "Background for a tinted \"selected/active, but not a solid filled button\" look — e.g. the active sidebar nav item, or \"+ New theme\" when nothing else is selected. Its paired \"-content\" is the text/icon color on top of it — also used as the element's own text color when its background is fully transparent (not selected/active)."},
+          {"primary", "The main call-to-action color — primary buttons (e.g. \"New DAG\", \"Save\"), links. Its paired \"-content\" is the text/icon color drawn on top of primary-colored buttons and badges."},
+          {"field", "The background of text inputs, selects, and textareas — intentionally separate from panels so fields stand out. Its paired \"-content\" is the text color typed into fields."},
+          {"secondary", "Secondary button backgrounds — less prominent actions like \"Cancel\" or \"Paste\". Its paired \"-content\" is the text/icon color drawn on top of secondary-colored buttons."},
           {"base-200", "The highlight color when hovering a row, menu item, or secondary button."},
           {"focus", "The border color a text field or select switches to when focused (clicked into or tabbed to)."},
-          {"field", "The background of text inputs, selects, and textareas — intentionally separate from panels so fields stand out."},
-          {"field-content", "The text color typed into fields."},
-          {"panel-title", "Background of section/table headers — a form panel's own uppercase section label, a table's header row."},
-          {"panel-title-content", "Text color on top of panel-title backgrounds."},
-          {"ghost", "Background for a tinted \"selected/active, but not a solid filled button\" look — e.g. the active sidebar nav item, or \"+ New theme\" when nothing else is selected."},
-          {"ghost-content", "Text/icon color on top of ghost backgrounds — also used as the ghost element's text color when its background is fully transparent (not selected/active)."},
-          {"primary", "The main call-to-action color — primary buttons (e.g. \"New DAG\", \"Save\"), links."},
-          {"primary-content", "Text/icon color on top of primary-colored buttons and badges."},
-          {"secondary", "Secondary button backgrounds — less prominent actions like \"Cancel\" or \"Paste\"."},
-          {"secondary-content", "Text/icon color on top of secondary-colored buttons."},
-          {"accent", "An alternate accent color, used sparingly for emphasis distinct from primary."},
-          {"accent-content", "Text/icon color on top of accent-colored elements."},
-          {"neutral", "Muted/neutral button and icon backgrounds, like toolbar icon buttons."},
-          {"neutral-content", "Text/icon color on top of neutral-colored elements."},
-          {"info", "Background for informational banners, badges, and status indicators."},
-          {"info-content", "Text/icon color on top of info-colored elements."},
-          {"success", "Background for success banners, badges, and status indicators."},
-          {"success-content", "Text/icon color on top of success-colored elements."},
-          {"warning", "Background for warning banners, badges, and status indicators."},
-          {"warning-content", "Text/icon color on top of warning-colored elements."},
-          {"error", "Background for error banners, badges, delete/danger actions, and status indicators."},
-          {"error-content", "Text/icon color on top of error-colored elements."}
+          {"accent", "An alternate accent color, used sparingly for emphasis distinct from primary. Its paired \"-content\" is the text/icon color drawn on top of accent-colored elements."},
+          {"neutral", "Muted/neutral button and icon backgrounds, like toolbar icon buttons. Its paired \"-content\" is the text/icon color drawn on top of neutral-colored elements."},
+          {"info", "Background for informational banners, badges, and status indicators. Its paired \"-content\" is the text/icon color drawn on top of info-colored elements."},
+          {"success", "Background for success banners, badges, and status indicators. Its paired \"-content\" is the text/icon color drawn on top of success-colored elements."},
+          {"warning", "Background for warning banners, badges, and status indicators. Its paired \"-content\" is the text/icon color drawn on top of warning-colored elements."},
+          {"error", "Background for error banners, badges, delete/danger actions, and status indicators. Its paired \"-content\" is the text/icon color drawn on top of error-colored elements."},
+          {"base-content", "The default text color used on top of base-100/window/base-300 backgrounds — shared by all three, so it isn't bundled into just one of their swatches."}
         ] do
       {key, ThemePreset.shade_caption(key), description}
     end
@@ -508,9 +511,18 @@ defmodule AirWeb.Pages.Settings do
           phx-value-id={preset.id}
           class={[
             "w-full text-left px-3 py-2 rounded text-sm flex items-center justify-between gap-2",
-            preset.id == @selected_preset_id && "bg-ghost/10 text-ghost",
+            # Same ghost-family scale as the sidebar nav (AirWeb.Layouts.
+            # sidebar_link/1): selected's resting tint (/20) matches what
+            # used to be a plain row's hover intensity, and every hover
+            # goes brighter still — so hover never looks identical to, or
+            # weaker than, resting selected. text-ghost-content (not
+            # text-ghost): ghost/ghost-content default to the same hex in
+            # both themes, so text-ghost on a high-opacity bg-ghost
+            # background was blending into it; ghost-content is the color
+            # actually meant to sit on top of a ghost surface.
+            preset.id == @selected_preset_id && "bg-ghost/20 text-ghost-content hover:bg-ghost/45",
             preset.id != @selected_preset_id &&
-              "text-base-content/70 hover:bg-base-200"
+              "text-base-content/70 hover:bg-ghost/35 hover:text-ghost-content"
           ]}
         >
           <span class="truncate">{preset.name}</span>
@@ -533,8 +545,8 @@ defmodule AirWeb.Pages.Settings do
             # preset row, whenever nothing else is selected, makes "you're
             # now creating a new theme" an actual visual state instead of
             # an absence of one.
-            is_nil(@selected_preset_id) && "bg-ghost/10 text-ghost",
-            !is_nil(@selected_preset_id) && "text-ghost hover:bg-base-200"
+            is_nil(@selected_preset_id) && "bg-ghost/20 text-ghost-content hover:bg-ghost/45",
+            !is_nil(@selected_preset_id) && "text-ghost hover:bg-ghost/35 hover:text-ghost-content"
           ]}
         >
           <.icon name="hero-plus" class="size-4" /> New theme
@@ -618,15 +630,15 @@ defmodule AirWeb.Pages.Settings do
             </div>
             <div :if={@preset_form[:id].value && !@preset_form.source.data.is_system} class="fieldset mb-0 sm:mb-2">
               <span class="label mb-1 invisible hidden sm:block" aria-hidden="true">spacer</span>
-              <button
-                type="button"
+              <.icon_button
+                icon="hero-trash"
+                variant="square"
+                tooltip={:bottom_right}
+                class="h-8.75 w-8.75 rounded border border-error/30 text-error hover:bg-error/10"
                 phx-click="delete_preset"
                 data-confirm="Delete this theme?"
                 aria-label="Delete theme"
-                class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-error/30 text-error hover:bg-error/10" | tooltip_class(:bottom_right)]}
-              >
-                <.icon name="hero-trash" class="size-4" />
-              </button>
+              />
             </div>
           </div>
 
@@ -697,7 +709,7 @@ defmodule AirWeb.Pages.Settings do
             space, rather than the column merely being tall enough to
             contain two normally-sized sections with a gap underneath.
           -->
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col border border-base-300 rounded-lg divide-y divide-base-300 overflow-hidden">
             <.scheme_accordion_section
               scheme="light"
               label="Light"
@@ -746,20 +758,56 @@ defmodule AirWeb.Pages.Settings do
 
   defp scheme_accordion_section(assigns) do
     ~H"""
-    <div class={["border border-base-300 rounded-lg overflow-hidden flex flex-col", @open && "flex-1"]}>
-      <button
-        type="button"
-        phx-click="toggle_scheme"
-        phx-value-scheme={@scheme}
+    <div class={["flex flex-col", @open && "flex-1"]}>
+      <div
         class={[
           "w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors",
-          @open && "bg-base-200 text-base-content",
-          !@open && "bg-base-100 text-base-content/70 hover:bg-base-200"
+          # hover:brightness-95 on the OPEN section: without its own hover
+          # state, hovering the already-open title produced zero feedback
+          # (same dead-on-hover gap fixed on the sidebar's active nav item
+          # and the Theme Editor's selected preset row) — brightness, not
+          # another bg-*/opacity step, since panel-title is already a
+          # solid fill with no lighter/darker sibling token to graduate to.
+          @open && "bg-panel-title text-panel-title-content hover:brightness-110",
+          !@open && "bg-base-100 text-base-content/70 hover:bg-panel-title hover:text-panel-title-content"
         ]}
       >
-        {@label}
-        <.icon name="hero-chevron-down" class={["size-4 transition-transform", @open && "rotate-180"]} />
-      </button>
+        <!--
+          button (not the outer div) carries the click + stretches to fill
+          the row via flex-1 — the (?) button below needs to be a REAL
+          sibling button, not nested inside this one: a <button> nested in
+          another <button> is invalid HTML, and in practice the inner
+          click bubbles up and fires the outer toggle_scheme click too.
+        -->
+        <button type="button" phx-click="toggle_scheme" phx-value-scheme={@scheme} class="flex-1 text-left">
+          {@label}
+        </button>
+        <span class="flex items-center gap-2">
+          <!--
+            Only the OPEN section's title row carries this — the (?) opens
+            a page-level drawer (not scoped to light vs dark), but showing
+            it on both the open and closed title at once would put it in
+            two places simultaneously for no reason; the open section is
+            the one actually showing swatches to ask "what is this?" about.
+          -->
+          <button
+            :if={@open}
+            type="button"
+            phx-click={open_color_guide()}
+            aria-label="What is each color used for?"
+            class={["size-5 shrink-0 flex items-center justify-center rounded-full border border-info text-info hover:bg-info hover:text-info-content text-xs font-semibold transition-colors" | tooltip_class(:bottom_right)]}
+          >
+            ?
+          </button>
+          <.icon_button
+            icon="hero-chevron-down"
+            icon_class={["size-4 transition-transform", @open && "rotate-180"]}
+            phx-click="toggle_scheme"
+            phx-value-scheme={@scheme}
+            aria-label={"Toggle #{@label}"}
+          />
+        </span>
+      </div>
       <!--
         class="hidden" (NOT :if={@open}) — a closed section's color
         <input>s must stay in the DOM, just visually hidden, or they never
@@ -769,9 +817,16 @@ defmodule AirWeb.Pages.Settings do
         failing ThemePreset.changeset/2's validate_required silently (no
         flash, nothing added to the preset list) since the whole scheme
         was simply absent from params, not just sent with stale values.
+
+        grid-rows-[0fr]/[1fr] + the inner min-h-0 wrapper is the standard
+        CSS-grid height-animation trick: height:auto can't be transitioned,
+        but a grid-template-rows fr value can, and grid's intrinsic sizing
+        still lets the inner content size itself normally once expanded.
       -->
-      <div class={["bg-base-100", @open && "flex-1", !@open && "hidden"]}>
-        <.color_swatches field_prefix={@field_prefix} form={@form} />
+      <div class={["grid bg-base-100 transition-[grid-template-rows] duration-200 ease-in-out", @open && "grid-rows-[1fr] flex-1", !@open && "grid-rows-[0fr]"]}>
+        <div class="min-h-0 overflow-hidden">
+          <.color_swatches field_prefix={@field_prefix} form={@form} />
+        </div>
       </div>
     </div>
     """
@@ -794,14 +849,14 @@ defmodule AirWeb.Pages.Settings do
   defp daisyui_paste_box(assigns) do
     ~H"""
     <div class="relative" id="daisyui-paste-box">
-      <button
-        type="button"
+      <.icon_button
+        icon="hero-arrow-down-tray"
+        variant="square"
+        tooltip={:bottom_right}
+        class="h-8.75 w-8.75 rounded border border-base-300 text-base-content hover:bg-base-200"
         phx-click={JS.toggle(to: "#daisyui-paste-popover") |> JS.toggle(to: "#daisyui-paste-backdrop")}
         aria-label="Import from daisyUI theme generator"
-        class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-base-300 text-base-content hover:bg-base-200" | tooltip_class(:bottom_right)]}
-      >
-        <.icon name="hero-arrow-down-tray" class="size-4" />
-      </button>
+      />
 
       <div
         id="daisyui-paste-backdrop"
@@ -1149,24 +1204,24 @@ defmodule AirWeb.Pages.Settings do
         }
       </script>
 
-      <button
-        type="button"
+      <.icon_button
+        icon="hero-clipboard-document"
+        variant="square"
+        tooltip={:bottom_right}
+        class="h-8.75 w-8.75 rounded border border-base-300 text-base-content hover:bg-base-200"
         data-clipboard-copy
         aria-label="Copy current colors to clipboard"
-        class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-base-300 text-base-content hover:bg-base-200" | tooltip_class(:bottom_right)]}
-      >
-        <.icon name="hero-clipboard-document" class="size-4" />
-      </button>
+      />
 
-      <button
-        type="button"
+      <.icon_button
+        icon="hero-clipboard-document-check"
+        variant="square"
+        tooltip={:bottom_right}
+        class="h-8.75 w-8.75 rounded border border-base-300 text-base-content hover:bg-base-200 opacity-40 cursor-not-allowed disabled:hover:bg-transparent"
         data-clipboard-paste
         disabled
         aria-label="Paste colors from clipboard"
-        class={["h-8.75 w-8.75 inline-flex items-center justify-center rounded border border-base-300 text-base-content hover:bg-base-200 opacity-40 cursor-not-allowed disabled:hover:bg-transparent" | tooltip_class(:bottom_right)]}
-      >
-        <.icon name="hero-clipboard-document-check" class="size-4" />
-      </button>
+      />
     </div>
     """
   end
@@ -1622,17 +1677,40 @@ defmodule AirWeb.Pages.Settings do
         </select>
       </div>
 
-      <!--
-        "+New theme" and a selected theme-list row (theme_tab/1 above) both
-        render with the identical bg-ghost/10 text-ghost combo — there's no
-        third variant to show separately, so one swatch stands in for both.
-      -->
-      <div class="px-4 pt-1.5">
+      <div class="grid grid-cols-2 gap-1.5 px-4 pt-1.5">
+        <!--
+          No disabled:* Tailwind variant here — this whole preview panel
+          renders every color via an inline style={"background-color:
+          ..."}, so a disabled LOOK has to be a real class (opacity +
+          cursor), same treatment the preview's disabled buttons above
+          already use, rather than relying on the browser's native
+          (unstyled) disabled appearance real <.input>/field_class() leave
+          disabled fields with elsewhere in the app.
+        -->
+        <input
+          type="text"
+          disabled
+          value="Disabled field"
+          class="w-full px-2.5 py-1.5 rounded text-xs border opacity-50 cursor-not-allowed"
+          style={"background-color: #{Map.get(@colors, "field", "#eee")}; color: #{Map.get(@colors, "field-content", "#111")}; border-color: #{Map.get(@colors, "base-300", "#ccc")}"}
+        />
+        <!--
+          "+New theme" and a selected theme-list row (theme_tab/1 above)
+          both render with the identical bg-ghost/20 text-ghost-content
+          combo — there's no third variant to show separately, so one
+          swatch stands in for both. Shares this row (50% width, not its
+          own full-width row) with the disabled field sample to its left.
+          "33" hex suffix ~= 20% alpha (matches bg-ghost/20's opacity);
+          ghost-content (not ghost) for text since ghost/ghost-content
+          default to the same hex in both themes — ghost-content is the
+          color actually meant to sit on top of a ghost-tinted surface,
+          same role panel-title-content plays for panel-title.
+        -->
         <div
           class="w-full px-2.5 py-1.5 rounded text-xs font-medium"
-          style={"background-color: #{Map.get(@colors, "ghost", "#888")}1a; color: #{Map.get(@colors, "ghost", "#888")}"}
+          style={"background-color: #{Map.get(@colors, "ghost", "#888")}33; color: #{Map.get(@colors, "ghost-content", "#888")}"}
         >
-          Ghost (selected/active)
+          Ghost (selected)
         </div>
       </div>
 

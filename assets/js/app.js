@@ -38,7 +38,11 @@ import {ChipListHook} from "./chip-list-hook"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken},
+  // Read live (not captured once at module load) so a theme switch followed
+  // by a LiveView reconnect/navigation still reports the current value —
+  // root.html.heex sets data-theme before this script runs, so it's always
+  // present by the time a socket connects.
+  params: () => ({_csrf_token: csrfToken, theme: document.documentElement.getAttribute("data-theme")}),
   hooks: {...colocatedHooks, DatePickerHook, DagEditorHook, CodeEditorHook, TaskModalTabsHook, DropdownPositionHook, ChipListHook},
 })
 
